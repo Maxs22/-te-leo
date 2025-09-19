@@ -1,0 +1,186 @@
+name: 🚀 Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger en tags como v1.0.0, v1.2.3, etc.
+
+jobs:
+  build-android:
+    name: 📱 Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: ☕ Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+        
+    - name: 🐦 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'  # Ajusta a tu versión
+        channel: 'stable'
+        
+    - name: 📦 Get dependencies
+      run: flutter pub get
+      
+    - name: 🔧 Build APK
+      run: |
+        flutter build apk --release
+        
+    - name: 📝 Get version from tag
+      id: version
+      run: |
+        echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        
+    - name: 📦 Rename APK
+      run: |
+        mv build/app/outputs/flutter-apk/app-release.apk \
+           build/app/outputs/flutter-apk/te-leo-${{ steps.version.outputs.VERSION }}.apk
+           
+    - name: 📤 Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-apk
+        path: build/app/outputs/flutter-apk/te-leo-${{ steps.version.outputs.VERSION }}.apk
+
+  build-ios:
+    name: 🍎 Build iOS IPA
+    runs-on: macos-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐦 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        
+    - name: 📦 Get dependencies
+      run: flutter pub get
+      
+    - name: 🔧 Build iOS (sin firma)
+      run: |
+        flutter build ios --release --no-codesign
+        
+    - name: 📝 Get version from tag
+      id: version
+      run: |
+        echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        
+    - name: 📦 Create IPA
+      run: |
+        mkdir -p build/ios/ipa
+        cd build/ios/iphoneos
+        zip -r ../ipa/te-leo-${{ steps.version.outputs.VERSION }}.ipa Runner.app
+        
+    - name: 📤 Upload IPA artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-ipa
+        path: build/ios/ipa/te-leo-${{ steps.version.outputs.VERSION }}.ipa
+
+  create-release:
+    name: 🎉 Create GitHub Release
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📝 Get version from tag
+      id: version
+      run: |
+        echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        echo "VERSION_NUMBER=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        
+    - name: 📥 Download Android APK
+      uses: actions/download-artifact@v4
+      with:
+        name: android-apk
+        path: ./artifacts
+        
+    - name: 📥 Download iOS IPA
+      uses: actions/download-artifact@v4
+      with:
+        name: ios-ipa
+        path: ./artifacts
+        
+    - name: 📄 Generate Release Notes
+      id: release_notes
+      run: |
+        cat << 'EOF' > release_notes.md
+        🎉 **Te Leo ${{ steps.version.outputs.VERSION_NUMBER }}** ya está disponible!
+        
+        ## ✨ Nuevas características:
+        - Mejoras en la síntesis de voz
+        - Interfaz más accesible
+        - Mejor sincronización de resaltado
+        - Sistema de pausa/reanudación mejorado
+        
+        ## 🔧 Mejoras técnicas:
+        - Optimizaciones de rendimiento
+        - Corrección de errores
+        - Actualizaciones automáticas
+        - Mejor compatibilidad
+        
+        ## 📱 Instalación:
+        
+        ### Android:
+        1. Descarga el archivo `te-leo-${{ steps.version.outputs.VERSION }}.apk`
+        2. Habilita "Fuentes desconocidas" en Configuración → Seguridad
+        3. Instala el APK
+        
+        ### iOS:
+        1. Descarga el archivo `te-leo-${{ steps.version.outputs.VERSION }}.ipa`
+        2. Usa AltStore, Sideloadly u otra herramienta de sideload
+        
+        ---
+        
+        🤖 **Release automático** generado por GitHub Actions
+        📅 **Fecha**: $(date +"%Y-%m-%d %H:%M UTC")
+        EOF
+        
+    - name: 🎉 Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: "Te Leo ${{ steps.version.outputs.VERSION_NUMBER }}"
+        body_path: release_notes.md
+        files: |
+          ./artifacts/te-leo-${{ steps.version.outputs.VERSION }}.apk
+          ./artifacts/te-leo-${{ steps.version.outputs.VERSION }}.ipa
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify-update:
+    name: 📢 Notify Update Available
+    needs: [create-release]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📝 Get version
+      id: version
+      run: |
+        echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        
+    - name: 📢 Send notification
+      run: |
+        echo "🎉 Te Leo ${{ steps.version.outputs.VERSION }} has been released!"
+        echo "Users will be automatically notified of the update."
+        
+        # Aquí podrías agregar notificaciones adicionales:
+        # - Webhook a Discord/Slack
+        # - Push notification a usuarios
+        # - Email a suscriptores
+        # - Actualización de base de datos
