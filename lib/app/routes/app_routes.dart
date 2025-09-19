@@ -22,8 +22,6 @@ class AppRoutes {
   /// Ruta para el lector de documentos
   static const String documentReader = '/document-reader';
   
-  /// Ruta para el traductor OCR
-  static const String translator = '/translator';
   
   /// Ruta inicial de la aplicación
   static const String initial = welcome;

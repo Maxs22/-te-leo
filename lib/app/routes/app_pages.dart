@@ -14,8 +14,6 @@ import '../modules/subscription/subscription_binding.dart';
 import '../modules/subscription/subscription_page.dart';
 import '../../global_widgets/simple_document_reader.dart';
 import '../data/models/documento.dart';
-import '../modules/translator/translator_binding.dart';
-import '../modules/translator/translator_page.dart';
 
 /// Configuración de páginas y rutas para GetX
 /// Define todas las rutas disponibles en la aplicación y sus bindings correspondientes
@@ -79,13 +77,6 @@ class AppPages {
           autoResumeFromNotification: resumeFromProgress,
         );
       },
-    ),
-    
-    // Traductor OCR
-    GetPage(
-      name: AppRoutes.translator,
-      page: () => const TranslatorPage(),
-      binding: TranslatorBinding(),
     ),
   ];
   

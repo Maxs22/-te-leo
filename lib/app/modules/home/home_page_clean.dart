@@ -50,6 +50,12 @@ class CleanHomePage extends GetView<HomeController> {
                 children: [
                   const SizedBox(height: 20),
                   
+                  // Notificación de actualización (si está disponible)
+                  const UpdateNotification(
+                    showOnlyWhenAvailable: true,
+                    compact: true,
+                  ),
+                  
                   // Header con saludo personalizado y configuraciones
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -159,31 +165,12 @@ class CleanHomePage extends GetView<HomeController> {
                             
                             const SizedBox(height: 16),
                             
-                            // Botones secundarios en fila
-                            Row(
-                              children: [
-                                // Mi Biblioteca
-                                Expanded(
-                                  child: _buildActionButton(
-                                    onPressed: controller.irABiblioteca,
-                                    icon: Icons.library_books,
-                                    label: 'my_library'.tr,
-                                    isCompact: true,
-                                  ),
-                                ),
-                                
-                                const SizedBox(width: 16),
-                                
-                                // Traductor OCR
-                                Expanded(
-                                  child: _buildActionButton(
-                                    onPressed: () => Get.toNamed('/translator'),
-                                    icon: Icons.translate,
-                                    label: 'translator_title'.tr.replaceAll('📸 ', ''),
-                                    isCompact: true,
-                                  ),
-                                ),
-                              ],
+                            // Botón secundario: Mi Biblioteca
+                            _buildActionButton(
+                              onPressed: controller.irABiblioteca,
+                              icon: Icons.library_books,
+                              label: 'my_library'.tr,
+                              isCompact: false,
                             ),
                           ],
                         ),
