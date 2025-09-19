@@ -113,7 +113,7 @@ class AppUpdateService extends GetxService {
   final RxBool _isCheckingForUpdates = false.obs;
 
   // Configuración
-  String _updateCheckUrl = 'https://api.github.com/repos/MaximoDev/te-leo/releases/latest';
+  String _updateCheckUrl = 'https://api.github.com/repos/Maxs22/-te-leo/releases/latest';
   Duration _checkInterval = const Duration(hours: 6);
   bool _autoCheckEnabled = true;
   bool _showUpdateDialogs = true;
