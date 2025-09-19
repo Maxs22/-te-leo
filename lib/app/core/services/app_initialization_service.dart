@@ -118,9 +118,15 @@ class AppInitializationService extends GetxService {
       },
       
       () async {
-        _updateStatus('Inicializando recordatorios de lectura...', 0.55);
+        _updateStatus('Inicializando recordatorios de lectura...', 0.53);
         Get.put(ReadingReminderService(), permanent: true);
         _initializedServices.add('ReadingReminderService');
+      },
+      
+      () async {
+        _updateStatus('Inicializando síntesis de voz...', 0.57);
+        Get.put(TTSService(), permanent: true);
+        _initializedServices.add('TTSService');
       },
       
       () async {
@@ -158,19 +164,10 @@ class AppInitializationService extends GetxService {
         
         await Future.delayed(const Duration(milliseconds: 100));
         
-        _updateStatus('Preparando síntesis de voz...', 0.8);
-        Get.lazyPut<TTSService>(() => TTSService(), fenix: true);
-        _initializedServices.add('TTSService (lazy)');
-        
-        await Future.delayed(const Duration(milliseconds: 100));
-        
         _updateStatus('Preparando TTS avanzado...', 0.85);
         Get.lazyPut<EnhancedTTSService>(() => EnhancedTTSService(), fenix: true);
         _initializedServices.add('EnhancedTTSService (lazy)');
         
-        // Servicio de traducción
-        Get.lazyPut<TranslationService>(() => TranslationService(), fenix: true);
-        _initializedServices.add('TranslationService (lazy)');
         
         _updateStatus('Inicialización completa', 1.0);
         

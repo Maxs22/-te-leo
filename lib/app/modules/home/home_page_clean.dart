@@ -44,7 +44,7 @@ class CleanHomePage extends GetView<HomeController> {
             ),
           ),
           child: SafeArea(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
@@ -60,7 +60,7 @@ class CleanHomePage extends GetView<HomeController> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
+                      Flexible(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -102,11 +102,11 @@ class CleanHomePage extends GetView<HomeController> {
                     ],
                   ),
                   
-                  // Contenido principal expandido para evitar scroll
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
+                  // Contenido principal
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 40),
                         // Logo/Icono principal
                         Container(
                           width: 80,
@@ -151,6 +151,8 @@ class CleanHomePage extends GetView<HomeController> {
                             ),
                           ],
                         ),
+                        
+                        const SizedBox(height: 40),
                     
                         // Botones de acción principales
                         Column(
@@ -175,18 +177,22 @@ class CleanHomePage extends GetView<HomeController> {
                           ],
                         ),
                         
+                        const SizedBox(height: 40),
+                        
                         // Estadísticas del usuario (si están disponibles)
                         Obx(() => controller.hasStatistics
                           ? _buildStatisticsCard()
                           : const SizedBox.shrink()),
                         
+                        const SizedBox(height: 40),
+                        
                         // Información de versión al final
                         _buildVersionInfo(),
+                        
+                        const SizedBox(height: 20),
                       ],
                     ),
-                  ),
-                  ],
-                ),
+                ],
               ),
             ),
           ),

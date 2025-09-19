@@ -27,8 +27,6 @@ class AppTranslations extends Translations {
       'onboarding_step2_description': 'Te Leo convierte el texto en audio con voces naturales y configurables',
       'onboarding_step3_title': '📚 Guarda en tu biblioteca',
       'onboarding_step3_description': 'Todos tus documentos se guardan automáticamente para acceder cuando quieras',
-      'onboarding_step4_title': '🌐 Traduce al instante',
-      'onboarding_step4_description': 'Traduce cualquier texto entre español e inglés con solo una foto',
       'onboarding_step5_title': '♿ Diseño accesible',
       'onboarding_step5_description': 'Optimizado para personas con baja visión y dislexia con colores y tipografía especiales',
       
@@ -54,35 +52,15 @@ class AppTranslations extends Translations {
       'voice_speed': 'Velocidad de voz',
       'voice_pitch': 'Tono de voz',
       'voice_volume': 'Volumen de voz',
-      
-      // Traductor OCR
-      'translator_title': '📸 Traductor',
       'taking_photo': 'Tomando foto...',
       'photo_cancelled': 'Foto cancelada',
       'selecting_image': 'Seleccionando imagen...',
       'image_selection_cancelled': 'Selección cancelada',
       'extracting_text': 'Extrayendo texto...',
       'no_text_detected': 'No se detectó texto en la imagen',
-      'translating_text': 'Traduciendo...',
-      'translation_completed': 'Traducción completada',
-      'translation_failed': 'Error en la traducción',
-      'translation_saved': 'Traducción guardada',
       'document_saved_successfully': 'Documento guardado exitosamente',
-      'translation_error': 'Error de traducción',
-      'translator_welcome_title': 'Traductor OCR',
-      'translator_welcome_subtitle': 'Toma una foto y traduce el texto al instante',
       'take_photo': 'Tomar foto',
       'select_from_gallery': 'Seleccionar de galería',
-      'original_text': 'Texto original',
-      'detected_language': 'Idioma detectado: {{language}}',
-      'translated_text': 'Texto traducido',
-      'confidence': 'Confianza: {{confidence}}',
-      'try_again': 'Intentar de nuevo',
-      'play_text': 'Reproducir texto',
-      'target_language': 'Idioma de destino',
-      'save_translation': 'Guardar traducción',
-      'translation_history': 'Historial de traducciones',
-      'no_translation_history': 'No hay traducciones guardadas',
       'exit_app_title': 'Salir de la aplicación',
       'exit_app_message': '¿Estás seguro de que quieres salir?',
       'exit': 'Salir',
@@ -228,8 +206,6 @@ class AppTranslations extends Translations {
       'onboarding_step2_description': 'Te Leo converts text to audio with natural and configurable voices',
       'onboarding_step3_title': '📚 Save to your library',
       'onboarding_step3_description': 'All your documents are automatically saved for easy access anytime',
-      'onboarding_step4_title': '🌐 Translate instantly',
-      'onboarding_step4_description': 'Translate any text between Spanish and English with just a photo',
       'onboarding_step5_title': '♿ Accessible design',
       'onboarding_step5_description': 'Optimized for people with low vision and dyslexia with special colors and typography',
       
@@ -390,11 +366,6 @@ class AppTranslations extends Translations {
     
       'reminder_settings': 'Reminder settings',
      
-      
-      // Translator module
-      'new_translation': 'New translation',
-     
-      'translation_document_title': 'Translation @source → @target',
   
     },
   };

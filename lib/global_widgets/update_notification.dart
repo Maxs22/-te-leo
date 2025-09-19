@@ -16,26 +16,28 @@ class UpdateNotification extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetX<AppUpdateService>(
-      builder: (service) {
-        return Obx(() {
-          final updateInfo = service.updateInfo;
-          final state = service.state;
+    try {
+      final service = Get.find<AppUpdateService>();
+      return Obx(() {
+        final updateInfo = service.updateInfo;
+        final state = service.state;
 
-          // No mostrar si no hay actualización y está configurado para solo mostrar cuando hay
-          if (showOnlyWhenAvailable && !service.hasUpdate) {
-            return const SizedBox.shrink();
-          }
+        // No mostrar si no hay actualización y está configurado para solo mostrar cuando hay
+        if (showOnlyWhenAvailable && !service.hasUpdate) {
+          return const SizedBox.shrink();
+        }
 
-          // No mostrar durante verificación inicial
-          if (state == UpdateState.checking && updateInfo == null) {
-            return const SizedBox.shrink();
-          }
+        // No mostrar durante verificación inicial
+        if (state == UpdateState.checking && updateInfo == null) {
+          return const SizedBox.shrink();
+        }
 
-          return _buildNotificationCard(service, updateInfo, state);
-        });
-      },
-    );
+        return _buildNotificationCard(service, updateInfo, state);
+      });
+    } catch (e) {
+      // Si el servicio no está disponible, no mostrar nada
+      return const SizedBox.shrink();
+    }
   }
 
   Widget _buildNotificationCard(AppUpdateService service, UpdateInfo? updateInfo, UpdateState state) {
