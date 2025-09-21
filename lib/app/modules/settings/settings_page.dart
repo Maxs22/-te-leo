@@ -7,6 +7,9 @@ import '../../../global_widgets/global_widgets.dart';
 import '../../data/models/configuracion_usuario.dart';
 import '../../core/services/reading_reminder_service.dart';
 import '../../core/services/app_update_service.dart';
+import '../../core/services/usage_limits_service.dart';
+import '../../core/services/premium_manager_service.dart';
+import '../../core/services/subscription_service.dart';
 import '../../core/models/voice_profiles.dart';
 
 /// Página de configuraciones de Te Leo
@@ -82,6 +85,10 @@ class SettingsPage extends GetView<SettingsController> {
 
               // Recordatorios de lectura
               _buildReadingRemindersSection(),
+              const SizedBox(height: 24),
+
+              // Límites de uso (solo para usuarios gratuitos)
+              _buildUsageLimitsSection(),
               const SizedBox(height: 24),
 
               // Configuraciones premium
@@ -709,6 +716,21 @@ class SettingsPage extends GetView<SettingsController> {
 
           const Divider(),
 
+          // 🧪 PRUEBAS DE PREMIUM (solo en debug)
+          ListTile(
+            leading: const Icon(
+              Icons.star,
+              color: Colors.amber,
+            ),
+            title: const Text('🧪 Probar Sistema Premium'),
+            subtitle: const Text('Activar/desactivar premium y límites'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () => _showPremiumTestOptions(),
+            contentPadding: EdgeInsets.zero,
+          ),
+
+          const Divider(),
+
           // Información de la app
           ListTile(
             leading: const Icon(
@@ -1170,6 +1192,172 @@ class SettingsPage extends GetView<SettingsController> {
     );
   }
 
+  /// Construye la sección de límites de uso para usuarios gratuitos
+  Widget _buildUsageLimitsSection() {
+    try {
+      final limitsService = Get.find<UsageLimitsService>();
+      return Obx(() {
+        // Solo mostrar para usuarios gratuitos
+        try {
+          final subscriptionService = Get.find<SubscriptionService>();
+          if (subscriptionService.isPremium) {
+            return const SizedBox.shrink();
+          }
+        } catch (e) {
+          // Si no se puede verificar, mostrar por defecto
+        }
+
+          final limitInfo = limitsService.getLimitInfo();
+          final documentosUsados = limitInfo['documentosUsados'] as int;
+          final limiteTotal = limitInfo['limiteTotal'] as int;
+          final documentosRestantes = limitInfo['documentosRestantes'] as int;
+          final diasParaReseteo = limitInfo['diasParaReseteo'] as int;
+
+          return ModernCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.description,
+                      color: Get.theme.colorScheme.secondary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Límites de Uso',
+                      style: Get.theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Get.theme.colorScheme.secondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Progreso de documentos
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Documentos este mes',
+                            style: Get.theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$documentosUsados de $limiteTotal usados',
+                            style: Get.theme.textTheme.bodySmall?.copyWith(
+                              color: documentosRestantes > 0 
+                                ? Get.theme.colorScheme.onSurface.withOpacity(0.7)
+                                : Get.theme.colorScheme.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: documentosRestantes > 0 
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: documentosRestantes > 0 
+                            ? Colors.green
+                            : Colors.red,
+                        ),
+                      ),
+                      child: Text(
+                        '$documentosRestantes restantes',
+                        style: TextStyle(
+                          color: documentosRestantes > 0 
+                            ? Colors.green
+                            : Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Barra de progreso
+                LinearProgressIndicator(
+                  value: documentosUsados / limiteTotal,
+                  backgroundColor: Get.theme.colorScheme.outline.withOpacity(0.2),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    documentosRestantes > 0 
+                      ? Get.theme.colorScheme.primary
+                      : Get.theme.colorScheme.error,
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Información de reseteo
+                Row(
+                  children: [
+                    Icon(
+                      Icons.refresh,
+                      size: 16,
+                      color: Get.theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Se resetea en $diasParaReseteo días',
+                      style: Get.theme.textTheme.bodySmall?.copyWith(
+                        color: Get.theme.colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+
+                if (documentosRestantes <= 1) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.amber, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            documentosRestantes == 0
+                              ? 'Has alcanzado tu límite mensual. Obtén Premium para documentos ilimitados.'
+                              : 'Te queda solo 1 documento este mes. Considera Premium para uso ilimitado.',
+                            style: Get.theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.amber.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        });
+    } catch (e) {
+      // Si el servicio no está disponible, no mostrar nada
+      return const SizedBox.shrink();
+    }
+  }
+
   /// 🧪 Muestra opciones de prueba para actualizaciones (solo debug)
   void _showUpdateTestOptions() {
     Get.bottomSheet(
@@ -1334,6 +1522,187 @@ class SettingsPage extends GetView<SettingsController> {
       Get.snackbar(
         'Error',
         'No se pudo resetear el estado: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  /// 🧪 Muestra opciones de prueba para el sistema premium (solo debug)
+  void _showPremiumTestOptions() {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Get.theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.star, color: Colors.amber),
+                const SizedBox(width: 8),
+                Text(
+                  '🧪 Pruebas del Sistema Premium',
+                  style: Get.theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Solo disponible en modo desarrollo',
+              style: Get.theme.textTheme.bodySmall?.copyWith(
+                color: Colors.amber,
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Activar premium de prueba
+            ListTile(
+              leading: const Icon(Icons.star, color: Colors.green),
+              title: const Text('Activar Premium (30 días)'),
+              subtitle: const Text('Simular suscripción premium activa'),
+              onTap: () {
+                Get.back();
+                _activateTestPremium();
+              },
+            ),
+            
+            // Simular límite alcanzado
+            ListTile(
+              leading: const Icon(Icons.block, color: Colors.red),
+              title: const Text('Simular Límite Alcanzado'),
+              subtitle: const Text('Probar diálogo de límite mensual'),
+              onTap: () {
+                Get.back();
+                _simulateLimit();
+              },
+            ),
+            
+            // Resetear límites
+            ListTile(
+              leading: const Icon(Icons.refresh, color: Colors.blue),
+              title: const Text('Resetear Límites'),
+              subtitle: const Text('Volver a 0 documentos este mes'),
+              onTap: () {
+                Get.back();
+                _resetLimits();
+              },
+            ),
+            
+            // Limpiar datos premium
+            ListTile(
+              leading: const Icon(Icons.clear, color: Colors.grey),
+              title: const Text('Limpiar Datos Premium'),
+              subtitle: const Text('Volver a usuario gratuito'),
+              onTap: () {
+                Get.back();
+                _clearPremiumData();
+              },
+            ),
+            
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 🧪 Activar premium de prueba
+  Future<void> _activateTestPremium() async {
+    try {
+      final premiumService = Get.find<PremiumManagerService>();
+      await premiumService.activateTestPremium(days: 30);
+      
+      Get.snackbar(
+        '🧪 Premium Activado',
+        'Premium activado por 30 días para pruebas',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'No se pudo activar premium: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  /// 🧪 Simular límite alcanzado
+  Future<void> _simulateLimit() async {
+    try {
+      final limitsService = Get.find<UsageLimitsService>();
+      await limitsService.simulateLimit();
+      
+      Get.snackbar(
+        '🧪 Límite Simulado',
+        'Límite mensual alcanzado para pruebas',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'No se pudo simular límite: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  /// 🧪 Resetear límites
+  Future<void> _resetLimits() async {
+    try {
+      final limitsService = Get.find<UsageLimitsService>();
+      await limitsService.resetLimitsForTesting();
+      
+      Get.snackbar(
+        '🧪 Límites Reseteados',
+        'Límites de uso reiniciados para pruebas',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.blue.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'No se pudieron resetear límites: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  /// 🧪 Limpiar datos premium
+  Future<void> _clearPremiumData() async {
+    try {
+      final premiumService = Get.find<PremiumManagerService>();
+      await premiumService.clearPremiumData();
+      
+      Get.snackbar(
+        '🧪 Datos Limpiados',
+        'Vuelto a usuario gratuito para pruebas',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.grey.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'No se pudieron limpiar datos: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.withOpacity(0.8),
         colorText: Colors.white,

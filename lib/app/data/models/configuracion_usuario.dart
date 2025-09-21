@@ -62,6 +62,11 @@ class ConfiguracionUsuario {
   final int diasConsecutivos;
   final DateTime fechaUltimoUso;
   final DateTime ultimoAcceso;
+  
+  // Control de límites para versión gratuita
+  final int documentosEstesMes;
+  final DateTime? fechaReseteoMensual;
+  final bool mostrarAnuncios;
 
   const ConfiguracionUsuario({
     required this.nombreUsuario,
@@ -98,6 +103,9 @@ class ConfiguracionUsuario {
     this.diasConsecutivos = 1,
     required this.fechaUltimoUso,
     required this.ultimoAcceso,
+    this.documentosEstesMes = 0,
+    this.fechaReseteoMensual,
+    this.mostrarAnuncios = true,
   });
 
   /// Constructor para nuevo usuario
@@ -108,6 +116,7 @@ class ConfiguracionUsuario {
       fechaRegistro: now,
       fechaUltimoUso: now,
       ultimoAcceso: now,
+      fechaReseteoMensual: now,
     );
   }
 
@@ -241,6 +250,9 @@ class ConfiguracionUsuario {
     int? diasConsecutivos,
     DateTime? fechaUltimoUso,
     DateTime? ultimoAcceso,
+    int? documentosEstesMes,
+    DateTime? fechaReseteoMensual,
+    bool? mostrarAnuncios,
   }) {
     return ConfiguracionUsuario(
       nombreUsuario: nombreUsuario ?? this.nombreUsuario,
@@ -277,6 +289,9 @@ class ConfiguracionUsuario {
       diasConsecutivos: diasConsecutivos ?? this.diasConsecutivos,
       fechaUltimoUso: fechaUltimoUso ?? this.fechaUltimoUso,
       ultimoAcceso: ultimoAcceso ?? DateTime.now(),
+      documentosEstesMes: documentosEstesMes ?? this.documentosEstesMes,
+      fechaReseteoMensual: fechaReseteoMensual ?? this.fechaReseteoMensual,
+      mostrarAnuncios: mostrarAnuncios ?? this.mostrarAnuncios,
     );
   }
 

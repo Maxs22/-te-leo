@@ -55,6 +55,7 @@ class SubscriptionService extends GetxService {
   bool get isRestoring => _isRestoring.value;
   bool get isPremium => currentLicense?.esPremium ?? false;
   bool get isDemo => currentLicense?.esDemo ?? false;
+  bool get isActive => isPremium && (state == SubscriptionState.active);
 
   @override
   Future<void> onInit() async {
@@ -106,33 +107,35 @@ class SubscriptionService extends GetxService {
       const SubscriptionProduct(
         id: 'te_leo_premium_monthly',
         title: 'Premium Mensual',
-        description: 'Acceso completo a todas las funciones',
-        price: '\$2.99',
+        description: 'Documentos ilimitados y sin anuncios',
+        price: '\$4.99',
         currency: 'USD',
         type: TipoLicencia.premiumMensual,
         duration: Duration(days: 30),
         features: [
-          'Voces premium adicionales',
-          'Exportación de documentos',
-          'Sincronización en la nube',
-          'Soporte prioritario',
-          'Sin anuncios',
+          '🚀 Documentos ilimitados',
+          '🎭 Voces premium naturales',
+          '📊 Estadísticas avanzadas',
+          '🎨 Temas premium',
+          '🚫 Sin anuncios',
+          '📞 Soporte prioritario',
         ],
       ),
       const SubscriptionProduct(
         id: 'te_leo_premium_yearly',
         title: 'Premium Anual',
-        description: 'El mejor valor - ahorra 50%',
-        price: '\$29.99',
+        description: 'El mejor valor - ahorra 58%',
+        price: '\$24.99',
         currency: 'USD',
         type: TipoLicencia.premiumAnual,
         duration: Duration(days: 365),
         features: [
-          'Todas las funciones mensuales',
-          'Voces exclusivas anuales',
-          'Funciones beta anticipadas',
-          'Soporte VIP',
-          'Descuento del 50%',
+          '🎯 Todas las funciones mensuales',
+          '⚡ Velocidades de lectura extendidas',
+          '🎪 Perfiles de configuración múltiples',
+          '📁 Exportar/Importar configuraciones',
+          '🎨 Temas exclusivos anuales',
+          '🔧 Funciones beta anticipadas',
         ],
         isPopular: true,
       ),

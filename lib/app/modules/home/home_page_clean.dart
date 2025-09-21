@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'home_controller.dart';
 import '../../../global_widgets/global_widgets.dart';
+import '../../../global_widgets/ad_banner_widget.dart';
 import '../../core/theme/accessible_colors.dart';
 
 /// Página principal limpia y moderna de Te Leo
@@ -19,18 +20,19 @@ class CleanHomePage extends GetView<HomeController> {
         // Mostrar diálogo de confirmación al intentar salir
         Get.dialog(
           ModernDialog(
-          titulo: 'exit_app_title'.tr,
-          contenido: 'exit_app_message'.tr,
-          textoBotonPrimario: 'exit'.tr,
-          textoBotonSecundario: 'cancel'.tr,
-          onBotonPrimario: () {
-            Get.back(); // Cerrar diálogo
-            SystemNavigator.pop(); // Salir de la app
-          },
-          onBotonSecundario: () => Get.back(), // Solo cerrar diálogo
-          icono: Icons.exit_to_app,
-          colorIcono: Get.theme.colorScheme.error,
-        ));
+            titulo: 'exit_app_title'.tr,
+            contenido: 'exit_app_message'.tr,
+            textoBotonPrimario: 'exit'.tr,
+            textoBotonSecundario: 'cancel'.tr,
+            onBotonPrimario: () {
+              Get.back(); // Cerrar diálogo
+              SystemNavigator.pop(); // Salir de la app
+            },
+            onBotonSecundario: () => Get.back(), // Solo cerrar diálogo
+            icono: Icons.exit_to_app,
+            colorIcono: Get.theme.colorScheme.error,
+          ),
+        );
       },
       child: Scaffold(
         body: Container(
@@ -190,6 +192,12 @@ class CleanHomePage extends GetView<HomeController> {
                         _buildVersionInfo(),
                         
                         const SizedBox(height: 20),
+                        
+                        // Banner de anuncios para usuarios gratuitos
+                        const AdBannerWidget(
+                          showOnlyIfFree: true,
+                          margin: EdgeInsets.only(bottom: 10),
+                        ),
                       ],
                     ),
                 ],
@@ -197,7 +205,8 @@ class CleanHomePage extends GetView<HomeController> {
             ),
           ),
         ),
-      );
+      ),
+    );
   }
 
   /// Construye información de versión

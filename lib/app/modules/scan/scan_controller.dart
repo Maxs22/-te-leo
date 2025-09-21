@@ -6,6 +6,8 @@ import '../../core/services/tts_service.dart';
 import '../../core/services/error_service.dart';
 import '../../core/services/debug_console_service.dart';
 import '../../core/services/user_preferences_service.dart';
+import '../../core/services/usage_limits_service.dart';
+import '../../core/services/ads_service.dart';
 import '../../data/providers/database_provider.dart';
 import '../../data/models/documento.dart';
 import '../../../global_widgets/global_widgets.dart';
@@ -92,6 +94,13 @@ class ScanController extends GetxController {
   /// Inicia el proceso de escaneo mostrando opciones de fuente
   Future<void> iniciarEscaneo() async {
     try {
+      // Verificar límites antes de escanear
+      final limitsService = Get.find<UsageLimitsService>();
+      if (!limitsService.canScanDocument()) {
+        await limitsService.showLimitReachedDialog();
+        return;
+      }
+
       _estado.value = EstadoEscaneo.seleccionandoImagen;
       _progreso.value = 0.0;
       _mensajeEstado.value = 'Selecciona una imagen...';
@@ -256,6 +265,10 @@ class ScanController extends GetxController {
       // Guardar en base de datos
       await _databaseProvider.insertarDocumento(documento);
       
+      // Registrar el uso en el servicio de límites
+      final limitsService = Get.find<UsageLimitsService>();
+      await limitsService.registerDocumentScanned();
+      
       // Incrementar contador de documentos escaneados
       await _prefsService.incrementDocumentsScanned();
 
@@ -270,6 +283,9 @@ class ScanController extends GetxController {
 
       DebugLog.i('Document scanned and saved successfully: ${_tituloDocumento.value}', 
                  category: LogCategory.database);
+
+      // Mostrar anuncio intersticial ocasionalmente (cada 3 documentos)
+      _tryShowInterstitialAd();
 
       // Volver a la biblioteca
       Get.back();
@@ -374,4 +390,28 @@ class ScanController extends GetxController {
 
   /// Obtiene el progreso como porcentaje
   String get progresoTexto => '${(_progreso.value * 100).round()}%';
+
+  /// Intenta mostrar anuncio intersticial (para usuarios gratuitos)
+  Future<void> _tryShowInterstitialAd() async {
+    try {
+      final adsService = Get.find<AdsService>();
+      final limitsService = Get.find<UsageLimitsService>();
+      
+      // Solo mostrar para usuarios gratuitos
+      if (!adsService.shouldShowAds) return;
+      
+      // Mostrar cada 3 documentos escaneados
+      final documentsThisMonth = limitsService.documentosUsadosEstesMes;
+      if (documentsThisMonth > 0 && documentsThisMonth % 3 == 0) {
+        DebugLog.d('Showing interstitial ad after $documentsThisMonth documents', 
+                   category: LogCategory.service);
+        
+        // Esperar un poco para que se complete la navegación
+        await Future.delayed(const Duration(seconds: 2));
+        await adsService.showInterstitialAd();
+      }
+    } catch (e) {
+      DebugLog.w('Error trying to show interstitial ad: $e', category: LogCategory.service);
+    }
+  }
 }

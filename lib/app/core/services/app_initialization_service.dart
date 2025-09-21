@@ -12,6 +12,9 @@ import 'subscription_service.dart';
 import 'device_security_service.dart';
 import 'reading_reminder_service.dart';
 import 'voice_setup_service.dart';
+import 'usage_limits_service.dart';
+import 'ads_service.dart';
+import 'premium_manager_service.dart';
 
 /// Estados de inicialización de la aplicación
 enum InitializationState {
@@ -133,6 +136,24 @@ class AppInitializationService extends GetxService {
         _updateStatus('Configurando sistema de voces...', 0.60);
         Get.put(VoiceSetupService(), permanent: true);
         _initializedServices.add('VoiceSetupService');
+      },
+      
+      () async {
+        _updateStatus('Inicializando gestor premium...', 0.63);
+        Get.put(PremiumManagerService(), permanent: true);
+        _initializedServices.add('PremiumManagerService');
+      },
+      
+      () async {
+        _updateStatus('Inicializando límites de uso...', 0.66);
+        Get.put(UsageLimitsService(), permanent: true);
+        _initializedServices.add('UsageLimitsService');
+      },
+      
+      () async {
+        _updateStatus('Inicializando sistema de anuncios...', 0.69);
+        Get.put(AdsService(), permanent: true);
+        _initializedServices.add('AdsService');
       },
     ];
 
