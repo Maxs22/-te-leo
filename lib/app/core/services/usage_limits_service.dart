@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'debug_console_service.dart';
 import 'subscription_service.dart';
 import '../../data/providers/configuracion_provider.dart';
+import '../config/app_config.dart';
 
 /// Servicio para gestionar límites de uso en la versión gratuita
 class UsageLimitsService extends GetxController {
@@ -11,9 +12,9 @@ class UsageLimitsService extends GetxController {
 
   final ConfiguracionProvider _configProvider = ConfiguracionProvider();
 
-  // Límites para versión gratuita
-  static const int LIMITE_DOCUMENTOS_GRATIS = 5;
-  static const Duration PERIODO_RESETEO = Duration(days: 30);
+  // Límites para versión gratuita (configurados centralmente)
+  static int get LIMITE_DOCUMENTOS_GRATIS => LimitsConfig.maxDocumentsPerMonth;
+  static Duration get PERIODO_RESETEO => Duration(days: LimitsConfig.resetPeriodDays);
 
   // Estado reactivo
   final RxInt _documentosUsadosEstesMes = 0.obs;

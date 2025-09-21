@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'debug_console_service.dart';
 import '../../data/models/licencia.dart';
+import '../config/app_config.dart';
 
 /// Estados de suscripción
 enum SubscriptionState {
@@ -104,14 +105,14 @@ class SubscriptionService extends GetxService {
   /// Cargar productos de suscripción disponibles
   void _loadAvailableProducts() {
     _availableProducts.value = [
-      const SubscriptionProduct(
-        id: 'te_leo_premium_monthly',
+      SubscriptionProduct(
+        id: PurchaseConfig.monthlyProductId,
         title: 'Premium Mensual',
         description: 'Documentos ilimitados y sin anuncios',
-        price: '\$4.99',
+        price: '\$${PurchaseConfig.prices['monthly']}',
         currency: 'USD',
         type: TipoLicencia.premiumMensual,
-        duration: Duration(days: 30),
+        duration: const Duration(days: 30),
         features: [
           '🚀 Documentos ilimitados',
           '🎭 Voces premium naturales',
@@ -121,14 +122,14 @@ class SubscriptionService extends GetxService {
           '📞 Soporte prioritario',
         ],
       ),
-      const SubscriptionProduct(
-        id: 'te_leo_premium_yearly',
+      SubscriptionProduct(
+        id: PurchaseConfig.yearlyProductId,
         title: 'Premium Anual',
         description: 'El mejor valor - ahorra 58%',
-        price: '\$24.99',
+        price: '\$${PurchaseConfig.prices['yearly']}',
         currency: 'USD',
         type: TipoLicencia.premiumAnual,
-        duration: Duration(days: 365),
+        duration: const Duration(days: 365),
         features: [
           '🎯 Todas las funciones mensuales',
           '⚡ Velocidades de lectura extendidas',

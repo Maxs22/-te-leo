@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'debug_console_service.dart';
 import 'subscription_service.dart';
+import '../config/app_config.dart';
 
 /// Estados de anuncios
 enum AdState {
@@ -27,14 +28,9 @@ class AdsService extends GetxController {
   BannerAd? _bannerAd;
   InterstitialAd? _interstitialAd;
 
-  // IDs de anuncios (TEST - cambiar por IDs reales en producción)
-  static const String _bannerAdUnitId = kDebugMode 
-    ? 'ca-app-pub-3940256099942544/6300978111'  // Test ID
-    : 'ca-app-pub-YOUR-REAL-ID/banner';         // Tu ID real
-
-  static const String _interstitialAdUnitId = kDebugMode
-    ? 'ca-app-pub-3940256099942544/1033173712'  // Test ID  
-    : 'ca-app-pub-YOUR-REAL-ID/interstitial';  // Tu ID real
+  // IDs de anuncios (configurados centralmente)
+  static String get _bannerAdUnitId => AdMobConfig.bannerAdUnitId;
+  static String get _interstitialAdUnitId => AdMobConfig.interstitialAdUnitId;
 
   // Getters
   AdState get bannerState => _bannerState.value;
