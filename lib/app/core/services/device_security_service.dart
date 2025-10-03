@@ -271,12 +271,12 @@ class DeviceSecurityService extends GetxService {
   /// Verificar emulador Android
   Future<bool> _checkAndroidEmulator() async {
     // Verificar propiedades del sistema que indican emulador
-    final emulatorIndicators = [
-      'ro.kernel.qemu',
-      'ro.hardware',
-      'ro.product.model',
-      'ro.product.manufacturer',
-    ];
+    // final emulatorIndicators = [
+    //   'ro.kernel.qemu',
+    //   'ro.hardware',
+    //   'ro.product.model',
+    //   'ro.product.manufacturer',
+    // ];
 
     // En una implementación real, leerías estas propiedades
     // Por ahora, retornar false

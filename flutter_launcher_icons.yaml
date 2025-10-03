@@ -1,0 +1,30 @@
+# Configuración para flutter_launcher_icons
+# Ejecutar con: dart run flutter_launcher_icons
+
+flutter_launcher_icons:
+  # Imagen de origen - usar el logo original
+  image_path: "assets/images/te-leo.png"
+  
+  # Configuración para Android
+  android: "launcher_icon"
+  
+  # Configuración para iOS
+  ios: true
+  
+  # Configuración para web
+  web:
+    generate: true
+    image_path: "assets/images/te-leo.png"
+    background_color: "#000000"
+    theme_color: "#2196F3"
+  
+  # Configuración para Windows
+  windows:
+    generate: true
+    image_path: "assets/images/te-leo.png"
+    icon_size: 48
+  
+  # Configuración para macOS
+  macos:
+    generate: true
+    image_path: "assets/images/te-leo.png"

@@ -1,5 +1,8 @@
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:get_storage/get_storage.dart';
+
+import '../../data/providers/database_provider.dart';
+import 'app_install_service.dart';
 import 'debug_console_service.dart';
 
 /// Claves para SharedPreferences
@@ -8,38 +11,39 @@ class PreferenceKeys {
   static const String hasSeenOnboarding = 'has_seen_onboarding';
   static const String firstLaunchDate = 'first_launch_date';
   static const String lastAppVersion = 'last_app_version';
-  
+
   // Información del usuario
   static const String userName = 'user_name';
   static const String userEmail = 'user_email';
   static const String userRegistrationDate = 'user_registration_date';
-  
+
   // Progreso de lectura
   static const String lastDocumentId = 'last_document_id';
   static const String lastReadingPosition = 'last_reading_position';
   static const String lastReadingPercentage = 'last_reading_percentage';
   static const String lastReadingDate = 'last_reading_date';
+  static const String lastReadingElapsedTime = 'last_reading_elapsed_time';
   static const String totalReadingTime = 'total_reading_time';
-  
+
   // Estadísticas de uso
   static const String documentsScanned = 'documents_scanned';
   static const String minutesListened = 'minutes_listened';
   static const String consecutiveDays = 'consecutive_days';
   static const String lastUsageDate = 'last_usage_date';
-  
+
   // Configuraciones de app
   static const String themeMode = 'theme_mode';
   static const String language = 'language';
   static const String fontSize = 'font_size';
   static const String ttsSpeed = 'tts_speed';
   static const String ttsVoice = 'tts_voice';
-  
+
   // Premium y suscripciones
   static const String isPremium = 'is_premium';
   static const String premiumExpirationDate = 'premium_expiration_date';
   static const String licenseType = 'license_type';
   static const String demoActivationDate = 'demo_activation_date';
-  
+
   // Configuraciones de funcionalidades
   static const String autoScrollEnabled = 'auto_scroll_enabled';
   static const String highlightCurrentWord = 'highlight_current_word';
@@ -51,7 +55,7 @@ class PreferenceKeys {
 class UserPreferencesService extends GetxService {
   static UserPreferencesService get to => Get.find();
 
-  late SharedPreferences _prefs;
+  final _storage = GetStorage();
 
   // Estado reactivo
   final RxBool _hasSeenOnboarding = false.obs;
@@ -77,14 +81,15 @@ class UserPreferencesService extends GetxService {
   Future<void> onInit() async {
     super.onInit();
     await _initializePreferences();
+    await _checkNewInstallation();
   }
 
-  /// Inicializar SharedPreferences
+  /// Inicializar GetStorage
   Future<void> _initializePreferences() async {
     try {
-      _prefs = await SharedPreferences.getInstance();
+      // GetStorage ya está inicializado en main.dart
       await _loadAllPreferences();
-      
+
       DebugLog.i('UserPreferencesService initialized successfully', category: LogCategory.service);
     } catch (e) {
       DebugLog.e('Error initializing UserPreferencesService: $e', category: LogCategory.service);
@@ -92,30 +97,89 @@ class UserPreferencesService extends GetxService {
     }
   }
 
+  /// Verifica si es una nueva instalación y resetea datos si es necesario
+  Future<void> _checkNewInstallation() async {
+    try {
+      // Verificar si el servicio de instalación está disponible
+      if (Get.isRegistered<AppInstallService>()) {
+        final installService = Get.find<AppInstallService>();
+
+        if (installService.shouldResetData()) {
+          DebugLog.i('New installation detected - resetting user preferences', category: LogCategory.service);
+          await _resetForNewInstallation();
+        }
+      }
+    } catch (e) {
+      DebugLog.e('Error checking new installation: $e', category: LogCategory.service);
+    }
+  }
+
+  /// Resetea las preferencias para una nueva instalación
+  Future<void> _resetForNewInstallation() async {
+    try {
+      // Resetear todas las preferencias incluyendo onboarding para nueva instalación
+      await _storage.remove(PreferenceKeys.hasSeenOnboarding);
+      await _storage.remove(PreferenceKeys.userName);
+      await _storage.remove(PreferenceKeys.userEmail);
+      await _storage.remove(PreferenceKeys.userRegistrationDate);
+      await _storage.remove(PreferenceKeys.lastDocumentId);
+      await _storage.remove(PreferenceKeys.lastReadingPosition);
+      await _storage.remove(PreferenceKeys.lastReadingPercentage);
+      await _storage.remove(PreferenceKeys.lastReadingDate);
+      await _storage.remove(PreferenceKeys.totalReadingTime);
+      await _storage.remove(PreferenceKeys.documentsScanned);
+      await _storage.remove(PreferenceKeys.minutesListened);
+      await _storage.remove(PreferenceKeys.consecutiveDays);
+      await _storage.remove(PreferenceKeys.lastUsageDate);
+      await _storage.remove(PreferenceKeys.isPremium);
+      await _storage.remove(PreferenceKeys.premiumExpirationDate);
+      await _storage.remove(PreferenceKeys.licenseType);
+      await _storage.remove(PreferenceKeys.demoActivationDate);
+
+      // Resetear base de datos también
+      try {
+        final databaseProvider = DatabaseProvider();
+        await databaseProvider.resetearParaNuevaInstalacion();
+        DebugLog.i('Database reset for new installation', category: LogCategory.service);
+      } catch (e) {
+        DebugLog.e('Error resetting database for new installation: $e', category: LogCategory.service);
+      }
+
+      // Recargar valores por defecto
+      await _loadAllPreferences();
+
+      DebugLog.i('User preferences reset for new installation', category: LogCategory.service);
+    } catch (e) {
+      DebugLog.e('Error resetting preferences for new installation: $e', category: LogCategory.service);
+    }
+  }
+
   /// Cargar todas las preferencias
   Future<void> _loadAllPreferences() async {
     try {
       // Onboarding y primera vez
-      _hasSeenOnboarding.value = _prefs.getBool(PreferenceKeys.hasSeenOnboarding) ?? false;
-      
+      _hasSeenOnboarding.value = _storage.read<bool>(PreferenceKeys.hasSeenOnboarding) ?? false;
+
       // Información del usuario
-      _userName.value = _prefs.getString(PreferenceKeys.userName) ?? '';
-      
+      _userName.value = _storage.read<String>(PreferenceKeys.userName) ?? '';
+
       // Progreso de lectura
-      _lastDocumentId.value = _prefs.getString(PreferenceKeys.lastDocumentId) ?? '';
-      _lastReadingPosition.value = _prefs.getInt(PreferenceKeys.lastReadingPosition) ?? 0;
-      _lastReadingPercentage.value = _prefs.getDouble(PreferenceKeys.lastReadingPercentage) ?? 0.0;
-      
+      _lastDocumentId.value = _storage.read<String>(PreferenceKeys.lastDocumentId) ?? '';
+      _lastReadingPosition.value = _storage.read<int>(PreferenceKeys.lastReadingPosition) ?? 0;
+      _lastReadingPercentage.value = _storage.read<double>(PreferenceKeys.lastReadingPercentage) ?? 0.0;
+
       // Estadísticas
-      _documentsScanned.value = _prefs.getInt(PreferenceKeys.documentsScanned) ?? 0;
-      _minutesListened.value = _prefs.getInt(PreferenceKeys.minutesListened) ?? 0;
-      _consecutiveDays.value = _prefs.getInt(PreferenceKeys.consecutiveDays) ?? 1;
+      _documentsScanned.value = _storage.read<int>(PreferenceKeys.documentsScanned) ?? 0;
+      _minutesListened.value = _storage.read<int>(PreferenceKeys.minutesListened) ?? 0;
+      _consecutiveDays.value = _storage.read<int>(PreferenceKeys.consecutiveDays) ?? 1;
 
       // Calcular días consecutivos basado en última fecha de uso
       await _updateConsecutiveDays();
 
-      DebugLog.d('Preferences loaded: onboarding=${_hasSeenOnboarding.value}, user=${_userName.value}', 
-                 category: LogCategory.service);
+      DebugLog.d(
+        'Preferences loaded: onboarding=${_hasSeenOnboarding.value}, user=${_userName.value}',
+        category: LogCategory.service,
+      );
     } catch (e) {
       DebugLog.e('Error loading preferences: $e', category: LogCategory.service);
     }
@@ -124,26 +188,59 @@ class UserPreferencesService extends GetxService {
   /// Marcar onboarding como visto
   Future<void> markOnboardingAsSeen() async {
     try {
-      await _prefs.setBool(PreferenceKeys.hasSeenOnboarding, true);
+      await _storage.write(PreferenceKeys.hasSeenOnboarding, true);
       _hasSeenOnboarding.value = true;
-      
+
       DebugLog.i('Onboarding marked as seen', category: LogCategory.ui);
     } catch (e) {
       DebugLog.e('Error marking onboarding as seen: $e', category: LogCategory.service);
     }
   }
 
+  /// Resetear onboarding (útil para testing y debugging)
+  Future<void> resetOnboarding() async {
+    try {
+      await _storage.remove(PreferenceKeys.hasSeenOnboarding);
+      _hasSeenOnboarding.value = false;
+
+      DebugLog.i('Onboarding reset successfully', category: LogCategory.service);
+    } catch (e) {
+      DebugLog.e('Error resetting onboarding: $e', category: LogCategory.service);
+    }
+  }
+
+  /// Forzar reset completo de onboarding (para debugging)
+  Future<void> forceResetOnboarding() async {
+    try {
+      // Eliminar la clave completamente
+      await _storage.remove(PreferenceKeys.hasSeenOnboarding);
+
+      // Resetear la variable reactiva
+      _hasSeenOnboarding.value = false;
+
+      // Recargar preferencias para asegurar consistencia
+      await _loadAllPreferences();
+
+      DebugLog.i(
+        'Onboarding force reset completed - hasSeenOnboarding: ${_hasSeenOnboarding.value}',
+        category: LogCategory.service,
+      );
+    } catch (e) {
+      DebugLog.e('Error force resetting onboarding: $e', category: LogCategory.service);
+    }
+  }
+
   /// Guardar nombre de usuario
   Future<void> saveUserName(String name) async {
     try {
-      await _prefs.setString(PreferenceKeys.userName, name);
+      await _storage.write(PreferenceKeys.userName, name);
       _userName.value = name;
-      
+
       // Si es la primera vez que se guarda el nombre, marcar fecha de registro
-      if (!_prefs.containsKey(PreferenceKeys.userRegistrationDate)) {
-        await _prefs.setString(PreferenceKeys.userRegistrationDate, DateTime.now().toIso8601String());
+      if (!_storage.hasData(PreferenceKeys.userRegistrationDate)) {
+        await _storage.write(PreferenceKeys.userRegistrationDate, DateTime.now().toIso8601String());
       }
-      
+
       DebugLog.i('User name saved: $name', category: LogCategory.service);
     } catch (e) {
       DebugLog.e('Error saving user name: $e', category: LogCategory.service);
@@ -155,21 +252,31 @@ class UserPreferencesService extends GetxService {
     required String documentId,
     required int position,
     required double percentage,
+    Duration? elapsedTime,
   }) async {
     try {
-      await Future.wait([
-        _prefs.setString(PreferenceKeys.lastDocumentId, documentId),
-        _prefs.setInt(PreferenceKeys.lastReadingPosition, position),
-        _prefs.setDouble(PreferenceKeys.lastReadingPercentage, percentage),
-        _prefs.setString(PreferenceKeys.lastReadingDate, DateTime.now().toIso8601String()),
-      ]);
+      final futures = <Future>[
+        _storage.write(PreferenceKeys.lastDocumentId, documentId),
+        _storage.write(PreferenceKeys.lastReadingPosition, position),
+        _storage.write(PreferenceKeys.lastReadingPercentage, percentage),
+        _storage.write(PreferenceKeys.lastReadingDate, DateTime.now().toIso8601String()),
+      ];
+
+      // Agregar tiempo transcurrido si está disponible
+      if (elapsedTime != null) {
+        futures.add(_storage.write(PreferenceKeys.lastReadingElapsedTime, elapsedTime.inSeconds));
+      }
+
+      await Future.wait(futures);
 
       _lastDocumentId.value = documentId;
       _lastReadingPosition.value = position;
       _lastReadingPercentage.value = percentage;
 
-      DebugLog.d('Reading progress saved: doc=$documentId, pos=$position, %=${percentage.toStringAsFixed(2)}', 
-                 category: LogCategory.service);
+      DebugLog.d(
+        'Reading progress saved: doc=$documentId, pos=$position, %=${percentage.toStringAsFixed(2)}, time=${elapsedTime?.inSeconds ?? 0}s',
+        category: LogCategory.service,
+      );
     } catch (e) {
       DebugLog.e('Error saving reading progress: $e', category: LogCategory.service);
     }
@@ -178,20 +285,22 @@ class UserPreferencesService extends GetxService {
   /// Obtener progreso de lectura para un documento
   Map<String, dynamic>? getReadingProgress(String documentId) {
     try {
-      final lastDocId = _prefs.getString(PreferenceKeys.lastDocumentId);
-      
+      final lastDocId = _storage.read<String>(PreferenceKeys.lastDocumentId);
+
       if (lastDocId != documentId) {
         return null; // No hay progreso para este documento
       }
 
-      final position = _prefs.getInt(PreferenceKeys.lastReadingPosition) ?? 0;
-      final percentage = _prefs.getDouble(PreferenceKeys.lastReadingPercentage) ?? 0.0;
-      final dateString = _prefs.getString(PreferenceKeys.lastReadingDate);
-      
+      final position = _storage.read<int>(PreferenceKeys.lastReadingPosition) ?? 0;
+      final percentage = _storage.read<double>(PreferenceKeys.lastReadingPercentage) ?? 0.0;
+      final dateString = _storage.read<String>(PreferenceKeys.lastReadingDate);
+      final elapsedSeconds = _storage.read<int>(PreferenceKeys.lastReadingElapsedTime) ?? 0;
+
       return {
         'position': position,
         'percentage': percentage,
         'date': dateString != null ? DateTime.tryParse(dateString) : null,
+        'elapsedTime': Duration(seconds: elapsedSeconds),
         'hasProgress': position > 0 || percentage > 0.05,
       };
     } catch (e) {
@@ -204,10 +313,11 @@ class UserPreferencesService extends GetxService {
   Future<void> clearReadingProgress() async {
     try {
       await Future.wait([
-        _prefs.remove(PreferenceKeys.lastDocumentId),
-        _prefs.remove(PreferenceKeys.lastReadingPosition),
-        _prefs.remove(PreferenceKeys.lastReadingPercentage),
-        _prefs.remove(PreferenceKeys.lastReadingDate),
+        _storage.remove(PreferenceKeys.lastDocumentId),
+        _storage.remove(PreferenceKeys.lastReadingPosition),
+        _storage.remove(PreferenceKeys.lastReadingPercentage),
+        _storage.remove(PreferenceKeys.lastReadingDate),
+        _storage.remove(PreferenceKeys.lastReadingElapsedTime),
       ]);
 
       _lastDocumentId.value = '';
@@ -224,12 +334,24 @@ class UserPreferencesService extends GetxService {
   Future<void> incrementDocumentsScanned() async {
     try {
       final newCount = _documentsScanned.value + 1;
-      await _prefs.setInt(PreferenceKeys.documentsScanned, newCount);
+      await _storage.write(PreferenceKeys.documentsScanned, newCount);
       _documentsScanned.value = newCount;
-      
+
       DebugLog.d('Documents scanned incremented to: $newCount', category: LogCategory.service);
     } catch (e) {
       DebugLog.e('Error incrementing documents scanned: $e', category: LogCategory.service);
+    }
+  }
+
+  /// Guardar contador específico de documentos escaneados (para sincronización)
+  Future<void> saveDocumentsScannedCount(int count) async {
+    try {
+      await _storage.write(PreferenceKeys.documentsScanned, count);
+      _documentsScanned.value = count;
+
+      DebugLog.d('Documents scanned count synchronized to: $count', category: LogCategory.service);
+    } catch (e) {
+      DebugLog.e('Error saving documents scanned count: $e', category: LogCategory.service);
     }
   }
 
@@ -237,9 +359,9 @@ class UserPreferencesService extends GetxService {
   Future<void> addListeningTime(int minutes) async {
     try {
       final newTotal = _minutesListened.value + minutes;
-      await _prefs.setInt(PreferenceKeys.minutesListened, newTotal);
+      await _storage.write(PreferenceKeys.minutesListened, newTotal);
       _minutesListened.value = newTotal;
-      
+
       DebugLog.d('Listening time updated: +${minutes}min, total=${newTotal}min', category: LogCategory.service);
     } catch (e) {
       DebugLog.e('Error adding listening time: $e', category: LogCategory.service);
@@ -249,13 +371,13 @@ class UserPreferencesService extends GetxService {
   /// Actualizar días consecutivos
   Future<void> _updateConsecutiveDays() async {
     try {
-      final lastUsageDateString = _prefs.getString(PreferenceKeys.lastUsageDate);
+      final lastUsageDateString = _storage.read<String>(PreferenceKeys.lastUsageDate);
       final now = DateTime.now();
-      
+
       if (lastUsageDateString == null) {
         // Primera vez usando la app
-        await _prefs.setString(PreferenceKeys.lastUsageDate, now.toIso8601String());
-        await _prefs.setInt(PreferenceKeys.consecutiveDays, 1);
+        await _storage.write(PreferenceKeys.lastUsageDate, now.toIso8601String());
+        await _storage.write(PreferenceKeys.consecutiveDays, 1);
         _consecutiveDays.value = 1;
         return;
       }
@@ -264,24 +386,24 @@ class UserPreferencesService extends GetxService {
       if (lastUsageDate == null) return;
 
       final daysDifference = now.difference(lastUsageDate).inDays;
-      
+
       if (daysDifference == 0) {
         // Mismo día, mantener racha
         return;
       } else if (daysDifference == 1) {
         // Día consecutivo, incrementar racha
         final newStreak = _consecutiveDays.value + 1;
-        await _prefs.setInt(PreferenceKeys.consecutiveDays, newStreak);
+        await _storage.write(PreferenceKeys.consecutiveDays, newStreak);
         _consecutiveDays.value = newStreak;
       } else {
         // Se rompió la racha, reiniciar
-        await _prefs.setInt(PreferenceKeys.consecutiveDays, 1);
+        await _storage.write(PreferenceKeys.consecutiveDays, 1);
         _consecutiveDays.value = 1;
       }
 
       // Actualizar fecha de último uso
-      await _prefs.setString(PreferenceKeys.lastUsageDate, now.toIso8601String());
-      
+      await _storage.write(PreferenceKeys.lastUsageDate, now.toIso8601String());
+
       DebugLog.d('Consecutive days updated: ${_consecutiveDays.value}', category: LogCategory.service);
     } catch (e) {
       DebugLog.e('Error updating consecutive days: $e', category: LogCategory.service);
@@ -295,14 +417,14 @@ class UserPreferencesService extends GetxService {
 
   /// Verificar si es la primera vez que se abre la app
   bool get isFirstLaunch {
-    return !_prefs.containsKey(PreferenceKeys.firstLaunchDate);
+    return !_storage.hasData(PreferenceKeys.firstLaunchDate);
   }
 
   /// Marcar primera apertura de la app
   Future<void> markFirstLaunch() async {
     try {
       if (isFirstLaunch) {
-        await _prefs.setString(PreferenceKeys.firstLaunchDate, DateTime.now().toIso8601String());
+        await _storage.write(PreferenceKeys.firstLaunchDate, DateTime.now().toIso8601String());
         DebugLog.i('First launch marked', category: LogCategory.service);
       }
     } catch (e) {
@@ -312,13 +434,11 @@ class UserPreferencesService extends GetxService {
 
   /// Verificar si hay progreso de lectura pendiente
   bool hasResumeableProgress() {
-    final lastDocId = _prefs.getString(PreferenceKeys.lastDocumentId);
-    final position = _prefs.getInt(PreferenceKeys.lastReadingPosition) ?? 0;
-    final percentage = _prefs.getDouble(PreferenceKeys.lastReadingPercentage) ?? 0.0;
-    
-    return lastDocId != null && 
-           lastDocId.isNotEmpty && 
-           (position > 0 || percentage > 0.05);
+    final lastDocId = _storage.read<String>(PreferenceKeys.lastDocumentId);
+    final position = _storage.read<int>(PreferenceKeys.lastReadingPosition) ?? 0;
+    final percentage = _storage.read<double>(PreferenceKeys.lastReadingPercentage) ?? 0.0;
+
+    return lastDocId != null && lastDocId.isNotEmpty && (position > 0 || percentage > 0.05);
   }
 
   /// Obtener información de resumen para mostrar en welcome
@@ -336,13 +456,13 @@ class UserPreferencesService extends GetxService {
 
   /// Obtener configuración de tema
   String getThemeMode() {
-    return _prefs.getString(PreferenceKeys.themeMode) ?? 'system';
+    return _storage.read<String>(PreferenceKeys.themeMode) ?? 'system';
   }
 
   /// Guardar tamaño de fuente
   Future<void> saveFontSize(double fontSize) async {
     try {
-      await _prefs.setDouble(PreferenceKeys.fontSize, fontSize);
+      await _storage.write(PreferenceKeys.fontSize, fontSize);
       DebugLog.d('Font size saved: $fontSize', category: LogCategory.service);
     } catch (e) {
       DebugLog.e('Error saving font size: $e', category: LogCategory.service);
@@ -351,25 +471,22 @@ class UserPreferencesService extends GetxService {
 
   /// Obtener tamaño de fuente
   double getFontSize() {
-    return _prefs.getDouble(PreferenceKeys.fontSize) ?? 1.0;
+    return _storage.read<double>(PreferenceKeys.fontSize) ?? 1.0;
   }
 
   /// Guardar configuración de TTS
-  Future<void> saveTTSSettings({
-    double? speed,
-    String? voice,
-  }) async {
+  Future<void> saveTTSSettings({double? speed, String? voice}) async {
     try {
       final futures = <Future>[];
-      
+
       if (speed != null) {
-        futures.add(_prefs.setDouble(PreferenceKeys.ttsSpeed, speed));
+        futures.add(_storage.write(PreferenceKeys.ttsSpeed, speed));
       }
-      
+
       if (voice != null) {
-        futures.add(_prefs.setString(PreferenceKeys.ttsVoice, voice));
+        futures.add(_storage.write(PreferenceKeys.ttsVoice, voice));
       }
-      
+
       await Future.wait(futures);
       DebugLog.d('TTS settings saved: speed=$speed, voice=$voice', category: LogCategory.service);
     } catch (e) {
@@ -380,30 +497,24 @@ class UserPreferencesService extends GetxService {
   /// Obtener configuración de TTS
   Map<String, dynamic> getTTSSettings() {
     return {
-      'speed': _prefs.getDouble(PreferenceKeys.ttsSpeed) ?? 0.5,
-      'voice': _prefs.getString(PreferenceKeys.ttsVoice),
+      'speed': _storage.read<double>(PreferenceKeys.ttsSpeed) ?? 0.5,
+      'voice': _storage.read<String>(PreferenceKeys.ttsVoice),
     };
   }
 
   /// Guardar estado premium
-  Future<void> savePremiumStatus({
-    required bool isPremium,
-    DateTime? expirationDate,
-    String? licenseType,
-  }) async {
+  Future<void> savePremiumStatus({required bool isPremium, DateTime? expirationDate, String? licenseType}) async {
     try {
-      final futures = <Future>[
-        _prefs.setBool(PreferenceKeys.isPremium, isPremium),
-      ];
-      
+      final futures = <Future>[_storage.write(PreferenceKeys.isPremium, isPremium)];
+
       if (expirationDate != null) {
-        futures.add(_prefs.setString(PreferenceKeys.premiumExpirationDate, expirationDate.toIso8601String()));
+        futures.add(_storage.write(PreferenceKeys.premiumExpirationDate, expirationDate.toIso8601String()));
       }
-      
+
       if (licenseType != null) {
-        futures.add(_prefs.setString(PreferenceKeys.licenseType, licenseType));
+        futures.add(_storage.write(PreferenceKeys.licenseType, licenseType));
       }
-      
+
       await Future.wait(futures);
       DebugLog.d('Premium status saved: isPremium=$isPremium', category: LogCategory.service);
     } catch (e) {
@@ -414,10 +525,10 @@ class UserPreferencesService extends GetxService {
   /// Verificar estado premium
   bool isPremiumActive() {
     try {
-      final isPremium = _prefs.getBool(PreferenceKeys.isPremium) ?? false;
+      final isPremium = _storage.read<bool>(PreferenceKeys.isPremium) ?? false;
       if (!isPremium) return false;
 
-      final expirationString = _prefs.getString(PreferenceKeys.premiumExpirationDate);
+      final expirationString = _storage.read<String>(PreferenceKeys.premiumExpirationDate);
       if (expirationString == null) return false;
 
       final expirationDate = DateTime.tryParse(expirationString);
@@ -434,14 +545,14 @@ class UserPreferencesService extends GetxService {
   Future<void> activateDemoMode() async {
     try {
       final expirationDate = DateTime.now().add(const Duration(days: 7));
-      
+
       await Future.wait([
-        _prefs.setBool(PreferenceKeys.isPremium, true),
-        _prefs.setString(PreferenceKeys.licenseType, 'demo'),
-        _prefs.setString(PreferenceKeys.premiumExpirationDate, expirationDate.toIso8601String()),
-        _prefs.setString(PreferenceKeys.demoActivationDate, DateTime.now().toIso8601String()),
+        _storage.write(PreferenceKeys.isPremium, true),
+        _storage.write(PreferenceKeys.licenseType, 'demo'),
+        _storage.write(PreferenceKeys.premiumExpirationDate, expirationDate.toIso8601String()),
+        _storage.write(PreferenceKeys.demoActivationDate, DateTime.now().toIso8601String()),
       ]);
-      
+
       DebugLog.i('Demo mode activated for 7 days', category: LogCategory.service);
     } catch (e) {
       DebugLog.e('Error activating demo mode: $e', category: LogCategory.service);
@@ -451,10 +562,10 @@ class UserPreferencesService extends GetxService {
   /// Obtener días restantes de demo
   int getDemoRemainingDays() {
     try {
-      final licenseType = _prefs.getString(PreferenceKeys.licenseType);
+      final licenseType = _storage.read<String>(PreferenceKeys.licenseType);
       if (licenseType != 'demo') return 0;
 
-      final expirationString = _prefs.getString(PreferenceKeys.premiumExpirationDate);
+      final expirationString = _storage.read<String>(PreferenceKeys.premiumExpirationDate);
       if (expirationString == null) return 0;
 
       final expirationDate = DateTime.tryParse(expirationString);
@@ -471,9 +582,9 @@ class UserPreferencesService extends GetxService {
   /// Limpiar todos los datos (para reset de app)
   Future<void> clearAllData() async {
     try {
-      await _prefs.clear();
+      await _storage.erase();
       await _loadAllPreferences(); // Recargar valores por defecto
-      
+
       DebugLog.i('All user data cleared', category: LogCategory.service);
     } catch (e) {
       DebugLog.e('Error clearing all data: $e', category: LogCategory.service);
@@ -483,14 +594,14 @@ class UserPreferencesService extends GetxService {
   /// Exportar todas las preferencias (para backup)
   Map<String, dynamic> exportPreferences() {
     try {
-      final allKeys = _prefs.getKeys();
+      final allKeys = _storage.getKeys();
       final exportData = <String, dynamic>{};
-      
+
       for (final key in allKeys) {
-        final value = _prefs.get(key);
+        final value = _storage.read(key);
         exportData[key] = value;
       }
-      
+
       DebugLog.i('Preferences exported: ${exportData.length} keys', category: LogCategory.service);
       return exportData;
     } catch (e) {
@@ -505,20 +616,20 @@ class UserPreferencesService extends GetxService {
       for (final entry in data.entries) {
         final key = entry.key;
         final value = entry.value;
-        
+
         if (value is bool) {
-          await _prefs.setBool(key, value);
+          await _storage.write(key, value);
         } else if (value is int) {
-          await _prefs.setInt(key, value);
+          await _storage.write(key, value);
         } else if (value is double) {
-          await _prefs.setDouble(key, value);
+          await _storage.write(key, value);
         } else if (value is String) {
-          await _prefs.setString(key, value);
+          await _storage.write(key, value);
         } else if (value is List<String>) {
-          await _prefs.setStringList(key, value);
+          await _storage.write(key, value);
         }
       }
-      
+
       await _loadAllPreferences(); // Recargar valores
       DebugLog.i('Preferences imported: ${data.length} keys', category: LogCategory.service);
     } catch (e) {
@@ -527,37 +638,39 @@ class UserPreferencesService extends GetxService {
   }
 
   /// Configuraciones de tema
-  
+
   /// Obtener modo de tema guardado
-  String get savedThemeMode => _prefs.getString(PreferenceKeys.themeMode) ?? 'system';
-  
+  String get savedThemeMode => _storage.read<String>(PreferenceKeys.themeMode) ?? 'system';
+
   /// Guardar modo de tema
   Future<void> saveThemeMode(String themeMode) async {
     try {
-      await _prefs.setString(PreferenceKeys.themeMode, themeMode);
+      await _storage.write(PreferenceKeys.themeMode, themeMode);
       DebugLog.d('Theme mode saved: $themeMode', category: LogCategory.service);
     } catch (e) {
       DebugLog.e('Error saving theme mode: $e', category: LogCategory.service);
     }
   }
-  
+
   /// Obtener idioma guardado
-  String get savedLanguage => _prefs.getString(PreferenceKeys.language) ?? 'es_ES';
-  
+  String get savedLanguage => _storage.read<String>(PreferenceKeys.language) ?? 'es_ES';
+
   /// Guardar idioma
   Future<void> saveLanguage(String language) async {
     try {
-      await _prefs.setString(PreferenceKeys.language, language);
+      await _storage.write(PreferenceKeys.language, language);
       DebugLog.d('Language saved: $language', category: LogCategory.service);
     } catch (e) {
       DebugLog.e('Error saving language: $e', category: LogCategory.service);
     }
   }
-  
+
   /// Obtener información de debug
   Map<String, dynamic> getDebugInfo() {
     return {
       'hasSeenOnboarding': hasSeenOnboarding,
+      'hasSeenOnboardingRaw': _storage.read<bool>(PreferenceKeys.hasSeenOnboarding),
+      'hasSeenOnboardingKeyExists': _storage.hasData(PreferenceKeys.hasSeenOnboarding),
       'userName': userName,
       'documentsScanned': documentsScanned,
       'minutesListened': minutesListened,
@@ -569,7 +682,8 @@ class UserPreferencesService extends GetxService {
       'demoRemainingDays': getDemoRemainingDays(),
       'isFirstLaunch': isFirstLaunch,
       'hasResumeableProgress': hasResumeableProgress(),
-      'totalPreferences': _prefs.getKeys().length,
+      'totalPreferences': _storage.getKeys().length,
+      'allPreferences': _storage.getKeys().toList(),
       'themeMode': savedThemeMode,
       'language': savedLanguage,
     };

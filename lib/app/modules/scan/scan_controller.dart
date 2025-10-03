@@ -1,27 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../core/services/camera_service.dart';
-import '../../core/services/ocr_service.dart';
-import '../../core/services/tts_service.dart';
-import '../../core/services/error_service.dart';
-import '../../core/services/debug_console_service.dart';
-import '../../core/services/user_preferences_service.dart';
-import '../../core/services/usage_limits_service.dart';
-import '../../core/services/ads_service.dart';
-import '../../data/providers/database_provider.dart';
-import '../../data/models/documento.dart';
+
 import '../../../global_widgets/global_widgets.dart';
+import '../../core/services/ads_service.dart';
+import '../../core/services/camera_service.dart';
+import '../../core/services/debug_console_service.dart';
+import '../../core/services/error_service.dart';
+import '../../core/services/ocr_service.dart';
+import '../../core/services/reading_reminder_service.dart';
+import '../../core/services/tts_service.dart';
+import '../../core/services/usage_limits_service.dart';
+import '../../core/services/user_preferences_service.dart';
+import '../../data/models/documento.dart';
+import '../../data/providers/database_provider.dart';
 
 /// Estados del proceso de escaneo
-enum EstadoEscaneo {
-  inicial,
-  seleccionandoImagen,
-  procesandoOCR,
-  mostrandoResultado,
-  guardando,
-  completado,
-  error,
-}
+enum EstadoEscaneo { inicial, seleccionandoImagen, procesandoOCR, mostrandoResultado, guardando, completado, error }
 
 /// Controlador para el módulo de escaneo de texto
 class ScanController extends GetxController {
@@ -144,7 +138,7 @@ class ScanController extends GetxController {
 
       // Procesar con OCR
       final resultado = await _ocrService.extraerTextoDeImagen(_imagenActual.value!.rutaArchivo);
-      
+
       _progreso.value = 0.8;
       await Future.delayed(const Duration(milliseconds: 300));
 
@@ -181,7 +175,6 @@ class ScanController extends GetxController {
         icon: Icon(Icons.check_circle, color: Get.theme.colorScheme.primary),
         duration: const Duration(seconds: 3),
       );
-
     } catch (e) {
       LoadingOverlay.ocultar();
       await _manejarError(e, tipo: TipoError.ocr);
@@ -191,11 +184,7 @@ class ScanController extends GetxController {
   /// Reproduce el texto extraído
   Future<void> reproducirTexto() async {
     if (_textoExtraido.value.isEmpty) {
-      Get.snackbar(
-        'Sin texto',
-        'No hay texto para reproducir',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      Get.snackbar('Sin texto', 'No hay texto para reproducir', snackPosition: SnackPosition.BOTTOM);
       return;
     }
 
@@ -235,16 +224,12 @@ class ScanController extends GetxController {
   /// Guarda el documento en la base de datos
   Future<void> guardarDocumento() async {
     if (_textoExtraido.value.trim().isEmpty) {
-      await ModernDialog.mostrarError(
-        mensaje: 'No hay texto para guardar',
-      );
+      await ModernDialog.mostrarError(mensaje: 'No hay texto para guardar');
       return;
     }
 
     if (_tituloDocumento.value.trim().isEmpty) {
-      await ModernDialog.mostrarError(
-        mensaje: 'Por favor ingresa un título para el documento',
-      );
+      await ModernDialog.mostrarError(mensaje: 'Por favor ingresa un título para el documento');
       return;
     }
 
@@ -264,13 +249,22 @@ class ScanController extends GetxController {
 
       // Guardar en base de datos
       await _databaseProvider.insertarDocumento(documento);
-      
+
       // Registrar el uso en el servicio de límites
       final limitsService = Get.find<UsageLimitsService>();
       await limitsService.registerDocumentScanned();
-      
-      // Incrementar contador de documentos escaneados
-      await _prefsService.incrementDocumentsScanned();
+
+      // Sincronizar contador de documentos con la base de datos
+      final actualCount = (await _databaseProvider.obtenerTodosLosDocumentos()).length;
+      await _prefsService.saveDocumentsScannedCount(actualCount);
+
+      // Actualizar fecha de último escaneo para notificaciones
+      try {
+        final reminderService = Get.find<ReadingReminderService>();
+        await reminderService.updateLastScanDate();
+      } catch (e) {
+        DebugLog.w('Could not update last scan date: $e', category: LogCategory.service);
+      }
 
       LoadingOverlay.ocultar();
       _estado.value = EstadoEscaneo.completado;
@@ -281,16 +275,27 @@ class ScanController extends GetxController {
         mensaje: 'El documento "${_tituloDocumento.value}" ha sido guardado en tu biblioteca.',
       );
 
-      DebugLog.i('Document scanned and saved successfully: ${_tituloDocumento.value}', 
-                 category: LogCategory.database);
+      DebugLog.i('Document scanned and saved successfully: ${_tituloDocumento.value}', category: LogCategory.database);
 
       // Mostrar anuncio intersticial ocasionalmente (cada 3 documentos)
       _tryShowInterstitialAd();
 
+      // Actualizar la biblioteca si está registrada
+      try {
+        if (Get.isRegistered<dynamic>()) {
+          // LibraryController
+          final libraryController = Get.find<dynamic>();
+          if (libraryController.toString().contains('LibraryController')) {
+            await libraryController.cargarDocumentos();
+          }
+        }
+      } catch (e) {
+        DebugLog.d('LibraryController not available to refresh', category: LogCategory.service);
+      }
+
       // Volver a la biblioteca
       Get.back();
       Get.toNamed('/library');
-
     } catch (e) {
       LoadingOverlay.ocultar();
       await _manejarError(e, tipo: TipoError.database);
@@ -313,28 +318,24 @@ class ScanController extends GetxController {
   /// Genera un título automático basado en el texto
   String _generarTituloAutomatico(String texto) {
     if (texto.trim().isEmpty) return 'Documento sin título';
-    
+
     // Tomar las primeras palabras significativas
     final palabras = texto.trim().split(RegExp(r'\s+'));
-    final palabrasSignificativas = palabras
-        .where((palabra) => palabra.length > 2)
-        .take(4)
-        .join(' ');
-    
+    final palabrasSignificativas = palabras.where((palabra) => palabra.length > 2).take(4).join(' ');
+
     if (palabrasSignificativas.isEmpty) {
       return 'Documento ${DateTime.now().day}/${DateTime.now().month}';
     }
-    
+
     // Capitalizar primera letra
-    return palabrasSignificativas.substring(0, 1).toUpperCase() + 
-           palabrasSignificativas.substring(1);
+    return palabrasSignificativas.substring(0, 1).toUpperCase() + palabrasSignificativas.substring(1);
   }
 
   /// Genera etiquetas automáticas basadas en el contenido
   String _generarEtiquetasAutomaticas(String texto) {
     final etiquetas = <String>[];
     final textoLower = texto.toLowerCase();
-    
+
     // Detectar tipos de documento comunes
     if (textoLower.contains(RegExp(r'\b(factura|recibo|ticket)\b'))) {
       etiquetas.add('factura');
@@ -351,40 +352,37 @@ class ScanController extends GetxController {
     if (textoLower.contains(RegExp(r'\b(nota|recordatorio|importante)\b'))) {
       etiquetas.add('nota');
     }
-    
+
     // Agregar etiqueta por fuente
     if (_imagenActual.value?.fuente == FuenteImagen.camara) {
       etiquetas.add('escaneado');
     } else {
       etiquetas.add('galería');
     }
-    
+
     // Agregar fecha
     final fecha = DateTime.now();
     etiquetas.add('${fecha.day}-${fecha.month}-${fecha.year}');
-    
+
     return etiquetas.join(', ');
   }
 
   /// Maneja errores del proceso usando el servicio global
   Future<void> _manejarError(dynamic error, {TipoError? tipo}) async {
     _estado.value = EstadoEscaneo.error;
-    
+
     await _errorService.handleError(
       error,
       tipo: tipo ?? TipoError.unknown,
-      contexto: {
-        'controlador': 'ScanController',
-        'estado_anterior': _estado.value.toString(),
-      },
+      contexto: {'controlador': 'ScanController', 'estado_anterior': _estado.value.toString()},
     );
-    
+
     _mensajeEstado.value = error.toString();
   }
 
   /// Valida si se puede guardar el documento
-  bool get puedeGuardar => 
-      _textoExtraido.value.trim().isNotEmpty && 
+  bool get puedeGuardar =>
+      _textoExtraido.value.trim().isNotEmpty &&
       _tituloDocumento.value.trim().isNotEmpty &&
       _estado.value == EstadoEscaneo.mostrandoResultado;
 
@@ -396,16 +394,15 @@ class ScanController extends GetxController {
     try {
       final adsService = Get.find<AdsService>();
       final limitsService = Get.find<UsageLimitsService>();
-      
+
       // Solo mostrar para usuarios gratuitos
       if (!adsService.shouldShowAds) return;
-      
+
       // Mostrar cada 3 documentos escaneados
       final documentsThisMonth = limitsService.documentosUsadosEstesMes;
       if (documentsThisMonth > 0 && documentsThisMonth % 3 == 0) {
-        DebugLog.d('Showing interstitial ad after $documentsThisMonth documents', 
-                   category: LogCategory.service);
-        
+        DebugLog.d('Showing interstitial ad after $documentsThisMonth documents', category: LogCategory.service);
+
         // Esperar un poco para que se complete la navegación
         await Future.delayed(const Duration(seconds: 2));
         await adsService.showInterstitialAd();

@@ -45,12 +45,16 @@ class OnboardingOverlay extends StatefulWidget {
       OnboardingOverlay(
         steps: steps,
         onCompleted: () {
+          // Primero cerrar el dialog
           Get.back();
-          onCompleted?.call();
+          // Luego ejecutar el callback con un pequeño delay
+          Future.delayed(const Duration(milliseconds: 200), () {
+            onCompleted?.call();
+          });
         },
         canSkip: canSkip,
       ),
-      barrierDismissible: false,
+      barrierDismissible: canSkip, // Permitir cerrar tocando fuera si se puede saltar
     );
   }
 
@@ -135,7 +139,7 @@ class _OnboardingOverlayState extends State<OnboardingOverlay>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withValues(alpha: 0.8),
+      color: Colors.black.withOpacity(0.8),
       child: FadeTransition(
         opacity: _fadeAnimation,
         child: SafeArea(
@@ -265,8 +269,8 @@ class _OnboardingOverlayState extends State<OnboardingOverlay>
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      color: step.color?.withValues(alpha: 0.2) ?? 
-                             Get.theme.colorScheme.primary.withValues(alpha: 0.2),
+                      color: step.color?.withOpacity(0.2) ?? 
+                             Get.theme.colorScheme.primary.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(60),
                     ),
                     child: Icon(
@@ -316,7 +320,7 @@ class _OnboardingOverlayState extends State<OnboardingOverlay>
                 child: Text(
                   step.description,
                   style: Get.theme.textTheme.bodyLarge?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: Colors.white.withOpacity(0.9),
                     height: 1.5,
                   ),
                   textAlign: TextAlign.center,
@@ -344,7 +348,7 @@ class _OnboardingOverlayState extends State<OnboardingOverlay>
       width: isActive ? 24 : 8,
       height: 8,
       decoration: BoxDecoration(
-        color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
+        color: isActive ? Colors.white : Colors.white.withOpacity(0.4),
         borderRadius: BorderRadius.circular(4),
       ),
     );

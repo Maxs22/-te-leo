@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../app/core/theme/accessible_colors.dart';
+import '../app/core/widgets/global_theme_wrapper.dart';
 
 /// Tarjeta moderna con diseño elegante y personalizable
 class ModernCard extends StatefulWidget {
@@ -32,8 +34,7 @@ class ModernCard extends StatefulWidget {
   State<ModernCard> createState() => _ModernCardState();
 }
 
-class _ModernCardState extends State<ModernCard>
-    with SingleTickerProviderStateMixin {
+class _ModernCardState extends State<ModernCard> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _elevationAnimation;
@@ -41,26 +42,17 @@ class _ModernCardState extends State<ModernCard>
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
+    _animationController = AnimationController(duration: const Duration(milliseconds: 200), vsync: this);
 
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: 0.98,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
 
     _elevationAnimation = Tween<double>(
       begin: widget.elevation,
       end: widget.elevation + 4,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
   }
 
   @override
@@ -71,45 +63,47 @@ class _ModernCardState extends State<ModernCard>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: Container(
-            margin: widget.margin ?? const EdgeInsets.all(8),
-            child: Material(
-              elevation: widget.showShadow ? _elevationAnimation.value : 0,
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.1),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: widget.backgroundColor ?? theme.colorScheme.surface,
-                  gradient: widget.gradient,
-                  borderRadius: BorderRadius.circular(widget.borderRadius),
-                  border: widget.border ?? Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
-                    width: 0.5,
+    return ThemeRebuilder(
+      child: Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
+
+          return AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _scaleAnimation.value,
+                child: Container(
+                  margin: widget.margin ?? const EdgeInsets.all(8),
+                  child: Material(
+                    elevation: widget.showShadow ? _elevationAnimation.value : 0,
+                    borderRadius: BorderRadius.circular(widget.borderRadius),
+                    shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.1),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: widget.backgroundColor ?? theme.colorScheme.surface,
+                        gradient: widget.gradient,
+                        borderRadius: BorderRadius.circular(widget.borderRadius),
+                        border:
+                            widget.border ??
+                            Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1), width: 0.5),
+                      ),
+                      child: InkWell(
+                        onTap: widget.onTap,
+                        onTapDown: (_) => _animationController.forward(),
+                        onTapUp: (_) => _animationController.reverse(),
+                        onTapCancel: () => _animationController.reverse(),
+                        borderRadius: BorderRadius.circular(widget.borderRadius),
+                        child: Container(padding: widget.padding ?? const EdgeInsets.all(16), child: widget.child),
+                      ),
+                    ),
                   ),
                 ),
-                child: InkWell(
-                  onTap: widget.onTap,
-                  onTapDown: (_) => _animationController.forward(),
-                  onTapUp: (_) => _animationController.reverse(),
-                  onTapCancel: () => _animationController.reverse(),
-                  borderRadius: BorderRadius.circular(widget.borderRadius),
-                  child: Container(
-                    padding: widget.padding ?? const EdgeInsets.all(16),
-                    child: widget.child,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -123,7 +117,6 @@ class DocumentCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onFavoriteToggle;
   final VoidCallback? onDelete;
-  final VoidCallback? onShare;
 
   const DocumentCard({
     super.key,
@@ -134,13 +127,12 @@ class DocumentCard extends StatelessWidget {
     this.onTap,
     this.onFavoriteToggle,
     this.onDelete,
-    this.onShare,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return ModernCard(
       onTap: onTap,
       child: Column(
@@ -171,9 +163,9 @@ class DocumentCard extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Resumen del contenido
           Text(
             resumen,
@@ -184,17 +176,13 @@ class DocumentCard extends StatelessWidget {
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Footer con fecha y acciones
           Row(
             children: [
-              Icon(
-                Icons.access_time,
-                size: 16,
-                color: theme.colorScheme.outline,
-              ),
+              Icon(Icons.access_time, size: 16, color: theme.colorScheme.outline),
               const SizedBox(width: 4),
               Text(
                 _formatearFecha(fechaModificacion),
@@ -203,28 +191,12 @@ class DocumentCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              
-              // Botones de acción
-              if (onShare != null)
-                IconButton(
-                  onPressed: onShare,
-                  icon: Icon(
-                    Icons.share,
-                    size: 18,
-                    color: theme.colorScheme.outline,
-                  ),
-                  constraints: const BoxConstraints(),
-                  padding: const EdgeInsets.all(4),
-                ),
-              
+
+              // Botón de eliminar
               if (onDelete != null)
                 IconButton(
                   onPressed: onDelete,
-                  icon: Icon(
-                    Icons.delete_outline,
-                    size: 18,
-                    color: theme.colorScheme.error.withValues(alpha: 0.7),
-                  ),
+                  icon: Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error.withValues(alpha: 0.7)),
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(4),
                 ),
@@ -283,10 +255,7 @@ class StatsCard extends StatelessWidget {
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          cardColor.withValues(alpha: 0.1),
-          cardColor.withValues(alpha: 0.05),
-        ],
+        colors: [cardColor.withValues(alpha: 0.1), cardColor.withValues(alpha: 0.05)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,40 +268,31 @@ class StatsCard extends StatelessWidget {
                   color: cardColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  icono,
-                  color: cardColor,
-                  size: 20,
-                ),
+                child: Icon(icono, color: cardColor, size: 20),
               ),
               const Spacer(),
               Text(
                 valor,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: cardColor,
-                ),
+                style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: cardColor),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           Text(
             titulo,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: AccessibleColors.getCardTextColor(), 
+              color: AccessibleColors.getCardTextColor(),
             ),
           ),
-          
+
           if (subtitulo != null) ...[
             const SizedBox(height: 4),
             Text(
               subtitulo!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AccessibleColors.getCardSecondaryTextColor(), 
-              ),
+              style: theme.textTheme.bodySmall?.copyWith(color: AccessibleColors.getCardSecondaryTextColor()),
             ),
           ],
         ],

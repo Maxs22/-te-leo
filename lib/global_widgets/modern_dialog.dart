@@ -14,6 +14,7 @@ class ModernDialog extends StatelessWidget {
   final IconData? icono;
   final Color? colorIcono;
   final bool barrierDismissible;
+  final EdgeInsetsGeometry? padding;
 
   const ModernDialog({
     super.key,
@@ -27,6 +28,7 @@ class ModernDialog extends StatelessWidget {
     this.icono,
     this.colorIcono,
     this.barrierDismissible = true,
+    this.padding,
   });
 
   @override
@@ -43,7 +45,7 @@ class ModernDialog extends StatelessWidget {
             child: Center(
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 40),
-                padding: const EdgeInsets.all(24),
+                padding: padding ?? const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(20),
@@ -193,6 +195,7 @@ class ModernDialog extends StatelessWidget {
     String textoBoton = 'Entendido',
     IconData? icono,
     Color? colorIcono,
+    EdgeInsetsGeometry? padding,
   }) async {
     await Get.dialog(
       ModernDialog(
@@ -201,6 +204,7 @@ class ModernDialog extends StatelessWidget {
         textoBotonPrimario: textoBoton,
         icono: icono,
         colorIcono: colorIcono,
+        padding: padding,
       ),
     );
   }

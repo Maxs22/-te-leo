@@ -4,26 +4,27 @@ import 'package:get/get.dart';
 
 /// Niveles de log para la consola de debug
 enum LogLevel {
-  debug,    // Información de desarrollo
-  info,     // Información general
-  warning,  // Advertencias
-  error,    // Errores
+  debug, // Información de desarrollo
+  info, // Información general
+  warning, // Advertencias
+  error, // Errores
   critical, // Errores críticos
 }
 
 /// Categorías de logs para organización
 enum LogCategory {
-  app,        // Aplicación general
-  database,   // Base de datos
-  tts,        // Text-to-Speech
-  ocr,        // Reconocimiento de texto
-  camera,     // Cámara e imágenes
+  app, // Aplicación general
+  database, // Base de datos
+  tts, // Text-to-Speech
+  ocr, // Reconocimiento de texto
+  camera, // Cámara e imágenes
   navigation, // Navegación
-  ui,         // Interfaz de usuario
-  service,    // Servicios generales
-  network,    // Red (futuro)
-  storage,    // Almacenamiento
-  security,   // Seguridad y validaciones
+  ui, // Interfaz de usuario
+  service, // Servicios generales
+  network, // Red (futuro)
+  storage, // Almacenamiento
+  security, // Seguridad y validaciones
+  notification, // Notificaciones
 }
 
 /// Entrada individual de log
@@ -160,9 +161,10 @@ class DebugConsoleService extends GetxService {
     _levelFilters.addAll(LogLevel.values);
     _categoryFilters.addAll(LogCategory.values);
 
-    log('Debug Console Service inicializado', 
-        level: LogLevel.info, 
-        category: LogCategory.service);
+    // Log después de que el servicio esté completamente inicializado
+    if (kDebugMode) {
+      print('🐛 Debug Console Service initialized');
+    }
   }
 
   /// Método principal de logging
@@ -194,11 +196,11 @@ class DebugConsoleService extends GetxService {
       if (_logs.length > _maxLogs) {
         _logs.removeRange(_maxLogs, _logs.length);
       }
-    });
 
-    // Actualizar contadores
-    _levelCounts[level] = (_levelCounts[level] ?? 0) + 1;
-    _categoryCounts[category] = (_categoryCounts[category] ?? 0) + 1;
+      // Actualizar contadores
+      _levelCounts[level] = (_levelCounts[level] ?? 0) + 1;
+      _categoryCounts[category] = (_categoryCounts[category] ?? 0) + 1;
+    });
 
     // Log a consola del sistema si está habilitado
     if (_logToConsole.value) {
@@ -219,11 +221,23 @@ class DebugConsoleService extends GetxService {
     log(message, level: LogLevel.warning, category: category, tag: tag, metadata: metadata);
   }
 
-  void error(String message, {LogCategory category = LogCategory.app, String? tag, Map<String, dynamic>? metadata, String? stackTrace}) {
+  void error(
+    String message, {
+    LogCategory category = LogCategory.app,
+    String? tag,
+    Map<String, dynamic>? metadata,
+    String? stackTrace,
+  }) {
     log(message, level: LogLevel.error, category: category, tag: tag, metadata: metadata, stackTrace: stackTrace);
   }
 
-  void critical(String message, {LogCategory category = LogCategory.app, String? tag, Map<String, dynamic>? metadata, String? stackTrace}) {
+  void critical(
+    String message, {
+    LogCategory category = LogCategory.app,
+    String? tag,
+    Map<String, dynamic>? metadata,
+    String? stackTrace,
+  }) {
     log(message, level: LogLevel.critical, category: category, tag: tag, metadata: metadata, stackTrace: stackTrace);
   }
 
@@ -248,7 +262,12 @@ class DebugConsoleService extends GetxService {
     log(message, level: level, category: LogCategory.navigation, tag: 'NAV', metadata: metadata);
   }
 
-  void logService(String message, {LogLevel level = LogLevel.info, String? serviceName, Map<String, dynamic>? metadata}) {
+  void logService(
+    String message, {
+    LogLevel level = LogLevel.info,
+    String? serviceName,
+    Map<String, dynamic>? metadata,
+  }) {
     log(message, level: level, category: LogCategory.service, tag: serviceName, metadata: metadata);
   }
 
@@ -258,16 +277,16 @@ class DebugConsoleService extends GetxService {
     final category = entry.category.toString().split('.').last.toUpperCase();
     final levelStr = entry.level.toString().split('.').last.toUpperCase();
     final tag = entry.tag != null ? '[${entry.tag}] ' : '';
-    
+
     final logLine = '${entry.prefix} $timestamp [$levelStr] [$category] $tag${entry.message}';
-    
+
     if (kDebugMode) {
       print(logLine);
-      
+
       if (entry.metadata != null) {
         print('  └─ Metadata: ${entry.metadata}');
       }
-      
+
       if (entry.stackTrace != null) {
         print('  └─ Stack: ${entry.stackTrace}');
       }
@@ -291,7 +310,7 @@ class DebugConsoleService extends GetxService {
       if (_searchFilter.value.isNotEmpty) {
         final searchLower = _searchFilter.value.toLowerCase();
         return entry.message.toLowerCase().contains(searchLower) ||
-               (entry.tag?.toLowerCase().contains(searchLower) ?? false);
+            (entry.tag?.toLowerCase().contains(searchLower) ?? false);
       }
 
       return true;
@@ -328,7 +347,10 @@ class DebugConsoleService extends GetxService {
     for (final category in LogCategory.values) {
       _categoryCounts[category] = 0;
     }
-    log('Logs limpiados', level: LogLevel.info, category: LogCategory.service);
+    // Log a consola del sistema para evitar recursión
+    if (kDebugMode) {
+      print('🐛 Debug Console: Logs cleared');
+    }
   }
 
   /// Exporta logs como texto
@@ -356,9 +378,9 @@ class DebugConsoleService extends GetxService {
       final category = entry.category.toString().split('.').last;
       final level = entry.level.toString().split('.').last;
       final tag = entry.tag != null ? '[${entry.tag}] ' : '';
-      
+
       buffer.writeln('$timestamp [$level] [$category] $tag${entry.message}');
-      
+
       if (entry.metadata != null) {
         buffer.writeln('  Metadata: ${entry.metadata}');
       }
@@ -371,12 +393,8 @@ class DebugConsoleService extends GetxService {
   Map<String, dynamic> getStats() {
     return {
       'total_logs': _logs.length,
-      'by_level': Map.fromEntries(
-        _levelCounts.entries.where((e) => e.value > 0),
-      ),
-      'by_category': Map.fromEntries(
-        _categoryCounts.entries.where((e) => e.value > 0),
-      ),
+      'by_level': Map.fromEntries(_levelCounts.entries.where((e) => e.value > 0)),
+      'by_category': Map.fromEntries(_categoryCounts.entries.where((e) => e.value > 0)),
       'oldest_log': _logs.isNotEmpty ? _logs.last.timestamp.toIso8601String() : null,
       'newest_log': _logs.isNotEmpty ? _logs.first.timestamp.toIso8601String() : null,
     };
@@ -405,23 +423,52 @@ extension DebugLogging on Object {
   }
 
   /// Log de advertencia
-  void logWarning(String message, {LogCategory category = LogCategory.app, String? tag, Map<String, dynamic>? metadata}) {
+  void logWarning(
+    String message, {
+    LogCategory category = LogCategory.app,
+    String? tag,
+    Map<String, dynamic>? metadata,
+  }) {
     if (Get.isRegistered<DebugConsoleService>()) {
       Get.find<DebugConsoleService>().warning(message, category: category, tag: tag, metadata: metadata);
     }
   }
 
   /// Log de error
-  void logError(String message, {LogCategory category = LogCategory.app, String? tag, Map<String, dynamic>? metadata, String? stackTrace}) {
+  void logError(
+    String message, {
+    LogCategory category = LogCategory.app,
+    String? tag,
+    Map<String, dynamic>? metadata,
+    String? stackTrace,
+  }) {
     if (Get.isRegistered<DebugConsoleService>()) {
-      Get.find<DebugConsoleService>().error(message, category: category, tag: tag, metadata: metadata, stackTrace: stackTrace);
+      Get.find<DebugConsoleService>().error(
+        message,
+        category: category,
+        tag: tag,
+        metadata: metadata,
+        stackTrace: stackTrace,
+      );
     }
   }
 
   /// Log crítico
-  void logCritical(String message, {LogCategory category = LogCategory.app, String? tag, Map<String, dynamic>? metadata, String? stackTrace}) {
+  void logCritical(
+    String message, {
+    LogCategory category = LogCategory.app,
+    String? tag,
+    Map<String, dynamic>? metadata,
+    String? stackTrace,
+  }) {
     if (Get.isRegistered<DebugConsoleService>()) {
-      Get.find<DebugConsoleService>().critical(message, category: category, tag: tag, metadata: metadata, stackTrace: stackTrace);
+      Get.find<DebugConsoleService>().critical(
+        message,
+        category: category,
+        tag: tag,
+        metadata: metadata,
+        stackTrace: stackTrace,
+      );
     }
   }
 }
@@ -429,7 +476,7 @@ extension DebugLogging on Object {
 /// Funciones globales de logging para uso directo
 class DebugLog {
   static DebugConsoleService? _service;
-  
+
   static DebugConsoleService? get _console {
     try {
       _service ??= Get.find<DebugConsoleService>();
@@ -454,11 +501,23 @@ class DebugLog {
     _console?.warning(message, category: category, tag: tag, metadata: metadata);
   }
 
-  static void e(String message, {LogCategory category = LogCategory.app, String? tag, Map<String, dynamic>? metadata, String? stackTrace}) {
+  static void e(
+    String message, {
+    LogCategory category = LogCategory.app,
+    String? tag,
+    Map<String, dynamic>? metadata,
+    String? stackTrace,
+  }) {
     _console?.error(message, category: category, tag: tag, metadata: metadata, stackTrace: stackTrace);
   }
 
-  static void c(String message, {LogCategory category = LogCategory.app, String? tag, Map<String, dynamic>? metadata, String? stackTrace}) {
+  static void c(
+    String message, {
+    LogCategory category = LogCategory.app,
+    String? tag,
+    Map<String, dynamic>? metadata,
+    String? stackTrace,
+  }) {
     _console?.critical(message, category: category, tag: tag, metadata: metadata, stackTrace: stackTrace);
   }
 
@@ -483,7 +542,12 @@ class DebugLog {
     _console?.logNavigation(message, level: level, metadata: metadata);
   }
 
-  static void service(String message, {LogLevel level = LogLevel.info, String? serviceName, Map<String, dynamic>? metadata}) {
+  static void service(
+    String message, {
+    LogLevel level = LogLevel.info,
+    String? serviceName,
+    Map<String, dynamic>? metadata,
+  }) {
     _console?.logService(message, level: level, serviceName: serviceName, metadata: metadata);
   }
 }

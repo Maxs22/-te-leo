@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:get/get.dart';
 import 'debug_console_service.dart';
@@ -76,12 +77,29 @@ class TTSService extends GetxService {
   final RxBool _isInitialized = false.obs;
   bool get isInitialized => _isInitialized.value;
 
+  /// Timer para simular progreso si el handler nativo no funciona
+  Timer? _progressTimer;
+  
+  /// Tiempo de inicio de la reproducción
+  DateTime? _startTime;
+
   /// Obtiene las voces reales disponibles en el dispositivo
   Future<List<Map<String, dynamic>>> obtenerVocesReales() async {
     try {
       final voices = await _flutterTts.getVoices;
       if (voices != null) {
-        final voicesList = List<Map<String, dynamic>>.from(voices);
+        // Convertir Map<Object?, Object?> a Map<String, dynamic>
+        final voicesList = <Map<String, dynamic>>[];
+        for (final voice in voices) {
+          if (voice is Map) {
+            final convertedVoice = <String, dynamic>{};
+            voice.forEach((key, value) {
+              convertedVoice[key.toString()] = value;
+            });
+            voicesList.add(convertedVoice);
+          }
+        }
+        
         _vocesDisponibles.value = voicesList;
         
         DebugLog.tts('Voces disponibles en el dispositivo: ${voicesList.length}', level: LogLevel.info);
@@ -123,20 +141,27 @@ class TTSService extends GetxService {
       });
 
       _flutterTts.setCompletionHandler(() {
+        DebugLog.tts('TTS completion handler triggered', level: LogLevel.info);
         _estado.value = EstadoTTS.completado;
         _progreso.value = 1.0;
+        _stopProgressBackup(); // Detener timer de respaldo
       });
 
       _flutterTts.setCancelHandler(() {
+        DebugLog.tts('TTS cancel handler triggered', level: LogLevel.info);
         _estado.value = EstadoTTS.detenido;
         _progreso.value = 0.0;
+        _stopProgressBackup(); // Detener timer de respaldo
       });
 
       _flutterTts.setPauseHandler(() {
+        DebugLog.tts('TTS pause handler triggered', level: LogLevel.info);
         _estado.value = EstadoTTS.pausado;
+        _stopProgressBackup(); // Detener timer de respaldo
       });
 
       _flutterTts.setContinueHandler(() {
+        DebugLog.tts('TTS continue handler triggered', level: LogLevel.info);
         _estado.value = EstadoTTS.reproduciendo;
       });
 
@@ -148,7 +173,9 @@ class TTSService extends GetxService {
       // Configurar progreso si está disponible
       _flutterTts.setProgressHandler((String text, int startOffset, int endOffset, String word) {
         if (text.isNotEmpty) {
-          _progreso.value = endOffset / text.length;
+          final newProgress = endOffset / text.length;
+          _progreso.value = newProgress;
+          DebugLog.tts('TTS Progress updated: ${(newProgress * 100).toStringAsFixed(1)}% (${endOffset}/${text.length})', level: LogLevel.debug);
         }
       });
 
@@ -180,7 +207,18 @@ class TTSService extends GetxService {
       // Obtener voces disponibles
       final voces = await _flutterTts.getVoices;
       if (voces != null) {
-        _vocesDisponibles.value = List<Map<String, dynamic>>.from(voces);
+        // Convertir Map<Object?, Object?> a Map<String, dynamic>
+        final voicesList = <Map<String, dynamic>>[];
+        for (final voice in voces) {
+          if (voice is Map) {
+            final convertedVoice = <String, dynamic>{};
+            voice.forEach((key, value) {
+              convertedVoice[key.toString()] = value;
+            });
+            voicesList.add(convertedVoice);
+          }
+        }
+        _vocesDisponibles.value = voicesList;
       }
     } catch (e) {
       DebugLog.tts('Error cargando configuraciones: $e', level: LogLevel.error);
@@ -234,8 +272,17 @@ class TTSService extends GetxService {
       final availableVoices = await _flutterTts.getVoices;
       
       if (availableVoices != null) {
-        // Convertir a lista tipada correctamente
-        final voicesList = List<Map<String, dynamic>>.from(availableVoices);
+        // Convertir Map<Object?, Object?> a Map<String, dynamic>
+        final voicesList = <Map<String, dynamic>>[];
+        for (final voice in availableVoices) {
+          if (voice is Map) {
+            final convertedVoice = <String, dynamic>{};
+            voice.forEach((key, value) {
+              convertedVoice[key.toString()] = value;
+            });
+            voicesList.add(convertedVoice);
+          }
+        }
         
         // Log de voces disponibles para debugging
         DebugLog.tts('Voces disponibles en dispositivo: ${voicesList.length}', level: LogLevel.info);
@@ -293,6 +340,10 @@ class TTSService extends GetxService {
       
       _textoActual.value = texto;
       _progreso.value = 0.0;
+      _startTime = DateTime.now();
+      
+      // Iniciar timer de progreso de respaldo
+      _startProgressBackup();
       
       await _flutterTts.speak(texto);
     } catch (e) {
@@ -323,6 +374,7 @@ class TTSService extends GetxService {
     await _flutterTts.stop();
     _estado.value = EstadoTTS.detenido;
     _progreso.value = 0.0;
+    _stopProgressBackup();
   }
   
   /// Detiene completamente toda reproducción (método más agresivo)
@@ -513,5 +565,52 @@ class TTSService extends GetxService {
       _flutterTts.stop();
       _isInitialized.value = false;
     }
+    _stopProgressBackup();
+  }
+
+  /// Inicia el timer de progreso de respaldo
+  void _startProgressBackup() {
+    _stopProgressBackup(); // Cancelar cualquier timer existente
+    
+    if (_textoActual.value.isEmpty) return;
+    
+    final textLength = _textoActual.value.length;
+    final estimatedDuration = Duration(seconds: (textLength / 20).ceil()); // Estimación: ~20 caracteres por segundo
+    
+    DebugLog.tts('Starting progress backup timer for ${textLength} characters, estimated duration: ${estimatedDuration.inSeconds}s', level: LogLevel.debug);
+    
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (_estado.value != EstadoTTS.reproduciendo) {
+        timer.cancel();
+        _progressTimer = null;
+        return;
+      }
+      
+      if (_startTime != null) {
+        final elapsed = DateTime.now().difference(_startTime!);
+        final progress = (elapsed.inMilliseconds / estimatedDuration.inMilliseconds).clamp(0.0, 1.0);
+        
+        // Usar progreso de respaldo si el nativo no está funcionando o si es muy lento
+        if (_progreso.value < progress) { // Usar el mayor entre progreso nativo y respaldo
+          _progreso.value = progress;
+          DebugLog.tts('Backup progress: ${(progress * 100).toStringAsFixed(1)}% (${elapsed.inSeconds}s/${estimatedDuration.inSeconds}s)', level: LogLevel.debug);
+        }
+        
+        if (progress >= 1.0) {
+          // Forzar finalización
+          DebugLog.tts('Backup timer reached 100% - forcing completion', level: LogLevel.info);
+          _progreso.value = 1.0;
+          _estado.value = EstadoTTS.completado;
+          timer.cancel();
+          _progressTimer = null;
+        }
+      }
+    });
+  }
+  
+  /// Detiene el timer de progreso de respaldo
+  void _stopProgressBackup() {
+    _progressTimer?.cancel();
+    _progressTimer = null;
   }
 }

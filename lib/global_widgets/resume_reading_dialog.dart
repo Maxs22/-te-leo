@@ -35,7 +35,7 @@ class ResumeReadingDialog extends StatelessWidget {
     final lastReadDate = progress['date'] as DateTime?;
 
     return ModernDialog(
-      titulo: 'Continuar Lectura',
+      titulo: 'continue_reading_title'.tr,
       icono: Icons.bookmark,
       colorIcono: Get.theme.colorScheme.primary,
       contenidoWidget: Column(
@@ -80,7 +80,7 @@ class ResumeReadingDialog extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Progreso de lectura',
+                          'reading_progress'.tr,
                           style: Get.theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
@@ -131,14 +131,14 @@ class ResumeReadingDialog extends StatelessWidget {
           
           // Mensaje explicativo
           Text(
-            '¿Deseas continuar desde donde te quedaste o empezar de nuevo?',
+            'continue_reading_message'.tr,
             style: Get.theme.textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
         ],
       ),
-      textoBotonPrimario: 'Continuar',
-      textoBotonSecundario: 'Empezar de Nuevo',
+      textoBotonPrimario: 'continue_button'.tr,
+      textoBotonSecundario: 'restart_button'.tr,
       onBotonPrimario: () {
         DebugLog.i('User chose to resume reading from ${percentage.toStringAsFixed(1)}%', 
                    category: LogCategory.ui);

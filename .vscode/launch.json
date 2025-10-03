@@ -1,0 +1,56 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "🚀 Te Leo - Desarrollo",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "args": [
+                "--dart-define=ENVIRONMENT=development",
+                "--dart-define=DEBUG_MODE=true",
+                "--dart-define=SHOW_DEBUG_ELEMENTS=true"
+            ],
+            "flutterMode": "debug",
+            "console": "debugConsole",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "FLUTTER_ENV": "development"
+            }
+        },
+        {
+            "name": "📦 Te Leo - Producción",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "args": [
+                "--dart-define=ENVIRONMENT=production",
+                "--dart-define=DEBUG_MODE=false",
+                "--dart-define=SHOW_DEBUG_ELEMENTS=false"
+            ],
+            "flutterMode": "release",
+            "console": "debugConsole",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "FLUTTER_ENV": "production"
+            }
+        },
+        {
+            "name": "🔧 Te Leo - Profile",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "args": [
+                "--dart-define=ENVIRONMENT=profile",
+                "--dart-define=DEBUG_MODE=false",
+                "--dart-define=SHOW_DEBUG_ELEMENTS=false"
+            ],
+            "flutterMode": "profile",
+            "console": "debugConsole",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "FLUTTER_ENV": "profile"
+            }
+        }
+    ]
+}

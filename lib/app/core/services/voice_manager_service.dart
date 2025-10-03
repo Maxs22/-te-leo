@@ -139,6 +139,7 @@ class VoiceManagerService extends GetxService {
       titulo: 'manual_voice_instructions'.tr,
       mensaje: 'manual_voice_steps'.tr,
       icono: Icons.help_outline,
+      padding: const EdgeInsets.all(16), // Menos padding para que los textos se extiendan más
     );
   }
 

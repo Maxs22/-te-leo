@@ -1,21 +1,23 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:get_storage/get_storage.dart';
+
+import 'ads_service.dart';
 import 'debug_console_service.dart';
 import 'subscription_service.dart';
-import 'ads_service.dart';
 import 'usage_limits_service.dart';
 
 /// Estado de la suscripción premium
 enum PremiumStatus {
-  free,           // Usuario gratuito
-  active,         // Premium activo
-  expired,        // Premium expirado
-  cancelled,      // Premium cancelado
-  pending,        // Compra pendiente de verificación
+  free, // Usuario gratuito
+  active, // Premium activo
+  expired, // Premium expirado
+  cancelled, // Premium cancelado
+  pending, // Compra pendiente de verificación
 }
 
 /// Información de suscripción premium
@@ -47,10 +49,7 @@ class PremiumSubscription {
       expiryDate: DateTime.parse(map['expiry_date'] ?? DateTime.now().toIso8601String()),
       platform: map['platform'] ?? 'unknown',
       isActive: map['is_active'] ?? false,
-      status: PremiumStatus.values.firstWhere(
-        (s) => s.name == map['status'],
-        orElse: () => PremiumStatus.free,
-      ),
+      status: PremiumStatus.values.firstWhere((s) => s.name == map['status'], orElse: () => PremiumStatus.free),
     );
   }
 
@@ -70,9 +69,7 @@ class PremiumSubscription {
 
   /// Verificar si la suscripción está activa
   bool get isValidAndActive {
-    return isActive && 
-           status == PremiumStatus.active && 
-           DateTime.now().isBefore(expiryDate);
+    return isActive && status == PremiumStatus.active && DateTime.now().isBefore(expiryDate);
   }
 
   /// Días restantes de suscripción
@@ -107,9 +104,12 @@ class PremiumSubscription {
 class PremiumManagerService extends GetxService {
   static PremiumManagerService get to => Get.find();
 
-  // Claves para SharedPreferences
+  // Claves para GetStorage
   static const String _premiumDataKey = 'te_leo_premium_data';
   static const String _lastVerificationKey = 'te_leo_last_verification';
+
+  // Instancia de GetStorage
+  final _storage = GetStorage();
 
   // Estado reactivo
   final Rx<PremiumSubscription?> _subscription = Rx<PremiumSubscription?>(null);
@@ -134,20 +134,19 @@ class PremiumManagerService extends GetxService {
   Future<void> _initializePremiumManager() async {
     try {
       DebugLog.i('Initializing PremiumManagerService', category: LogCategory.service);
-      
+
       _isLoading.value = true;
-      
+
       // Cargar datos de suscripción guardados
       await _loadSubscriptionData();
-      
+
       // Verificar estado actual
       await _verifySubscriptionStatus();
-      
+
       // Programar verificaciones periódicas
       _schedulePeriodicVerification();
-      
-      DebugLog.i('PremiumManagerService initialized - Status: ${_status.value}', 
-                 category: LogCategory.service);
+
+      DebugLog.i('PremiumManagerService initialized - Status: ${_status.value}', category: LogCategory.service);
     } catch (e) {
       DebugLog.e('Error initializing PremiumManagerService: $e', category: LogCategory.service);
       _status.value = PremiumStatus.free;
@@ -159,14 +158,13 @@ class PremiumManagerService extends GetxService {
   /// Cargar datos de suscripción desde almacenamiento local
   Future<void> _loadSubscriptionData() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final subscriptionData = prefs.getString(_premiumDataKey);
-      
+      final subscriptionData = _storage.read<String>(_premiumDataKey);
+
       if (subscriptionData != null) {
         final map = jsonDecode(subscriptionData) as Map<String, dynamic>;
         _subscription.value = PremiumSubscription.fromMap(map);
         _status.value = _subscription.value!.status;
-        
+
         DebugLog.d('Subscription data loaded from storage', category: LogCategory.service);
       } else {
         DebugLog.d('No subscription data found - user is free', category: LogCategory.service);
@@ -181,16 +179,14 @@ class PremiumManagerService extends GetxService {
   /// Guardar datos de suscripción en almacenamiento local
   Future<void> _saveSubscriptionData() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      
       if (_subscription.value != null) {
         final subscriptionJson = jsonEncode(_subscription.value!.toMap());
-        await prefs.setString(_premiumDataKey, subscriptionJson);
-        await prefs.setString(_lastVerificationKey, DateTime.now().toIso8601String());
-        
+        await _storage.write(_premiumDataKey, subscriptionJson);
+        await _storage.write(_lastVerificationKey, DateTime.now().toIso8601String());
+
         DebugLog.d('Subscription data saved to storage', category: LogCategory.service);
       } else {
-        await prefs.remove(_premiumDataKey);
+        await _storage.remove(_premiumDataKey);
         DebugLog.d('Subscription data cleared from storage', category: LogCategory.service);
       }
     } catch (e) {
@@ -208,7 +204,7 @@ class PremiumManagerService extends GetxService {
       }
 
       final now = DateTime.now();
-      
+
       // Verificar si expiró
       if (now.isAfter(subscription.expiryDate)) {
         DebugLog.i('Subscription expired on ${subscription.expiryDate}', category: LogCategory.service);
@@ -219,13 +215,14 @@ class PremiumManagerService extends GetxService {
       // Verificar si está activa
       if (subscription.isValidAndActive) {
         _status.value = PremiumStatus.active;
-        DebugLog.d('Subscription is active - expires in ${subscription.daysRemaining} days', 
-                   category: LogCategory.service);
+        DebugLog.d(
+          'Subscription is active - expires in ${subscription.daysRemaining} days',
+          category: LogCategory.service,
+        );
       } else {
         _status.value = PremiumStatus.cancelled;
         DebugLog.w('Subscription is cancelled or invalid', category: LogCategory.service);
       }
-
     } catch (e) {
       DebugLog.e('Error verifying subscription status: $e', category: LogCategory.service);
       _status.value = PremiumStatus.free;
@@ -241,9 +238,9 @@ class PremiumManagerService extends GetxService {
   }) async {
     try {
       DebugLog.i('Activating premium subscription', category: LogCategory.service);
-      
+
       _isLoading.value = true;
-      
+
       final newSubscription = PremiumSubscription(
         productId: productId,
         transactionId: transactionId,
@@ -256,16 +253,15 @@ class PremiumManagerService extends GetxService {
 
       _subscription.value = newSubscription;
       _status.value = PremiumStatus.active;
-      
+
       // Guardar en almacenamiento local
       await _saveSubscriptionData();
-      
+
       // Notificar a otros servicios
       await _notifyPremiumActivated();
-      
-      DebugLog.i('Premium activated successfully - expires: $expiryDate', 
-                 category: LogCategory.service);
-      
+
+      DebugLog.i('Premium activated successfully - expires: $expiryDate', category: LogCategory.service);
+
       return true;
     } catch (e) {
       DebugLog.e('Error activating premium: $e', category: LogCategory.service);
@@ -279,26 +275,22 @@ class PremiumManagerService extends GetxService {
   Future<void> _handleExpiredSubscription() async {
     try {
       DebugLog.i('Handling expired subscription', category: LogCategory.service);
-      
+
       // Cambiar estado pero mantener información para posible renovación
       if (_subscription.value != null) {
-        _subscription.value = _subscription.value!.copyWith(
-          isActive: false,
-          status: PremiumStatus.expired,
-        );
+        _subscription.value = _subscription.value!.copyWith(isActive: false, status: PremiumStatus.expired);
       }
-      
+
       _status.value = PremiumStatus.expired;
-      
+
       // Guardar estado actualizado
       await _saveSubscriptionData();
-      
+
       // Notificar a otros servicios
       await _notifyPremiumExpired();
-      
+
       // Mostrar notificación al usuario
       _showExpirationNotification();
-      
     } catch (e) {
       DebugLog.e('Error handling expired subscription: $e', category: LogCategory.service);
     }
@@ -308,22 +300,19 @@ class PremiumManagerService extends GetxService {
   Future<bool> cancelSubscription() async {
     try {
       DebugLog.i('Cancelling subscription', category: LogCategory.service);
-      
+
       if (_subscription.value != null) {
-        _subscription.value = _subscription.value!.copyWith(
-          isActive: false,
-          status: PremiumStatus.cancelled,
-        );
-        
+        _subscription.value = _subscription.value!.copyWith(isActive: false, status: PremiumStatus.cancelled);
+
         _status.value = PremiumStatus.cancelled;
         await _saveSubscriptionData();
-        
+
         // Notificar a otros servicios
         await _notifyPremiumCancelled();
-        
+
         return true;
       }
-      
+
       return false;
     } catch (e) {
       DebugLog.e('Error cancelling subscription: $e', category: LogCategory.service);
@@ -335,22 +324,22 @@ class PremiumManagerService extends GetxService {
   Future<bool> restoreSubscription() async {
     try {
       DebugLog.i('Attempting to restore subscription', category: LogCategory.service);
-      
+
       _isLoading.value = true;
-      
+
       // Usar SubscriptionService para verificar compras
       final subscriptionService = Get.find<SubscriptionService>();
       final restored = await subscriptionService.restorePurchases();
-      
+
       if (restored) {
         // Si se restauró, actualizar datos locales
         await _loadSubscriptionData();
         await _verifySubscriptionStatus();
-        
+
         DebugLog.i('Subscription restored successfully', category: LogCategory.service);
         return true;
       }
-      
+
       return false;
     } catch (e) {
       DebugLog.e('Error restoring subscription: $e', category: LogCategory.service);
@@ -366,7 +355,7 @@ class PremiumManagerService extends GetxService {
     Timer.periodic(const Duration(hours: 6), (timer) {
       _verifySubscriptionStatus();
     });
-    
+
     // Verificar cada día si hay que mostrar recordatorio de renovación
     Timer.periodic(const Duration(days: 1), (timer) {
       _checkRenewalReminder();
@@ -377,9 +366,9 @@ class PremiumManagerService extends GetxService {
   void _checkRenewalReminder() {
     final subscription = _subscription.value;
     if (subscription == null || !subscription.isActive) return;
-    
+
     final daysRemaining = subscription.daysRemaining;
-    
+
     // Mostrar recordatorio 7 días antes del vencimiento
     if (daysRemaining <= 7 && daysRemaining > 0) {
       _showRenewalReminder(daysRemaining);
@@ -424,11 +413,11 @@ class PremiumManagerService extends GetxService {
       // Deshabilitar anuncios
       final adsService = Get.find<AdsService>();
       adsService.disableAds();
-      
+
       // Resetear límites de uso
       final limitsService = Get.find<UsageLimitsService>();
       await limitsService.resetLimitsForTesting(); // Esto debería ser un método específico
-      
+
       DebugLog.d('Other services notified of premium activation', category: LogCategory.service);
     } catch (e) {
       DebugLog.w('Error notifying services of premium activation: $e', category: LogCategory.service);
@@ -441,7 +430,7 @@ class PremiumManagerService extends GetxService {
       // Habilitar anuncios
       final adsService = Get.find<AdsService>();
       await adsService.enableAds();
-      
+
       DebugLog.d('Other services notified of premium expiration', category: LogCategory.service);
     } catch (e) {
       DebugLog.w('Error notifying services of premium expiration: $e', category: LogCategory.service);
@@ -454,7 +443,7 @@ class PremiumManagerService extends GetxService {
       // Habilitar anuncios inmediatamente
       final adsService = Get.find<AdsService>();
       await adsService.enableAds();
-      
+
       DebugLog.d('Other services notified of premium cancellation', category: LogCategory.service);
     } catch (e) {
       DebugLog.w('Error notifying services of premium cancellation: $e', category: LogCategory.service);
@@ -464,7 +453,7 @@ class PremiumManagerService extends GetxService {
   /// Obtener información detallada de la suscripción
   Future<Map<String, dynamic>> getSubscriptionInfo() async {
     final subscription = _subscription.value;
-    
+
     return {
       'isPremium': isPremium,
       'status': _status.value.name,
@@ -477,8 +466,7 @@ class PremiumManagerService extends GetxService {
   /// Obtener fecha de última verificación
   Future<String?> _getLastVerificationDate() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(_lastVerificationKey);
+      return _storage.read<String>(_lastVerificationKey);
     } catch (e) {
       return null;
     }
@@ -487,9 +475,9 @@ class PremiumManagerService extends GetxService {
   /// 🧪 MODO DESARROLLO: Activar premium de prueba
   Future<void> activateTestPremium({int days = 30}) async {
     if (!kDebugMode) return;
-    
+
     DebugLog.i('🧪 ACTIVATING TEST PREMIUM for $days days', category: LogCategory.service);
-    
+
     final testSubscription = PremiumSubscription(
       productId: 'te_leo_premium_test',
       transactionId: 'test_${DateTime.now().millisecondsSinceEpoch}',
@@ -502,10 +490,10 @@ class PremiumManagerService extends GetxService {
 
     _subscription.value = testSubscription;
     _status.value = PremiumStatus.active;
-    
+
     await _saveSubscriptionData();
     await _notifyPremiumActivated();
-    
+
     Get.snackbar(
       '🧪 Premium Test Activado',
       'Premium activado por $days días para pruebas',
@@ -518,16 +506,16 @@ class PremiumManagerService extends GetxService {
   /// 🧪 MODO DESARROLLO: Simular expiración
   Future<void> simulateExpiration() async {
     if (!kDebugMode) return;
-    
+
     DebugLog.i('🧪 SIMULATING PREMIUM EXPIRATION', category: LogCategory.service);
-    
+
     if (_subscription.value != null) {
       _subscription.value = _subscription.value!.copyWith(
         expiryDate: DateTime.now().subtract(const Duration(days: 1)),
         status: PremiumStatus.expired,
         isActive: false,
       );
-      
+
       await _saveSubscriptionData();
       await _verifySubscriptionStatus();
     }
@@ -536,16 +524,15 @@ class PremiumManagerService extends GetxService {
   /// 🧪 MODO DESARROLLO: Limpiar datos premium
   Future<void> clearPremiumData() async {
     if (!kDebugMode) return;
-    
+
     DebugLog.i('🧪 CLEARING PREMIUM DATA', category: LogCategory.service);
-    
+
     _subscription.value = null;
     _status.value = PremiumStatus.free;
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_premiumDataKey);
-    await prefs.remove(_lastVerificationKey);
-    
+
+    await _storage.remove(_premiumDataKey);
+    await _storage.remove(_lastVerificationKey);
+
     await _notifyPremiumExpired();
   }
 }

@@ -6,10 +6,11 @@ import 'home_controller.dart';
 class HomeBinding extends Bindings {
   @override
   void dependencies() {
-    // Registro del controlador de Home usando lazy loading
-    // Se crea solo cuando es necesario para optimizar memoria
-    Get.lazyPut<HomeController>(
-      () => HomeController(),
+    // Registro del controlador de Home
+    // Usar put en lugar de lazyPut para que se recargue cada vez
+    Get.put<HomeController>(
+      HomeController(),
+      // NO permanent para que se recree cada vez que volvemos a Home
     );
   }
 }

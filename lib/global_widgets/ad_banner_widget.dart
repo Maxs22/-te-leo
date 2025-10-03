@@ -84,11 +84,11 @@ class AdStatusWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(color: Colors.green),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.star, color: Colors.green, size: 16),
-                  const SizedBox(width: 4),
+                   SizedBox(width: 4),
                   Text(
                     'Premium - Sin anuncios',
                     style: TextStyle(

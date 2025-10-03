@@ -1,184 +1,186 @@
 import 'package:flutter/foundation.dart';
 
-/// Configuración de la aplicación para diferentes entornos
+import '../services/environment_service.dart';
+
+/// Configuración de la aplicación
 class AppConfig {
-  static const String _appName = 'Te Leo';
-  static const String _packageName = 'com.teleo.app';
-  
-  /// Nombre de la aplicación
-  static String get appName => _appName;
-  
-  /// Nombre del paquete
-  static String get packageName => _packageName;
-  
-  /// Determina si estamos en modo desarrollo
-  static bool get isDevelopment => kDebugMode;
-  
-  /// Determina si estamos en modo producción
-  static bool get isProduction => kReleaseMode;
-  
-  /// Versión de la API (para futuras integraciones)
-  static String get apiVersion => 'v1';
-  
-  /// URL base para la API (para futuras funciones online)
-  static String get baseUrl => isDevelopment 
-    ? 'https://api-dev.teleo.com'
-    : 'https://api.teleo.com';
-}
+  // Singleton
+  static final AppConfig _instance = AppConfig._internal();
+  factory AppConfig() => _instance;
+  AppConfig._internal();
 
-/// Configuración específica de AdMob
-class AdMobConfig {
-  // ⚠️ IMPORTANTE: Reemplazar con IDs reales antes de publicar
-  
-  /// Application ID de AdMob
-  static String get applicationId {
-    if (AppConfig.isDevelopment) {
-      // IDs de prueba
-      return 'ca-app-pub-3940256099942544~3347511713'; // Android test
-    } else {
-      // IDs de producción - REEMPLAZAR ANTES DE PUBLICAR
-      return 'ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX';
-    }
+  /// Flag para determinar si estamos en modo desarrollo
+  /// Se puede sobrescribir con --dart-define=DEBUG_MODE=false
+  static bool get isDevelopment {
+    return EnvironmentService.getBool('DEBUG_MODE', defaultValue: kDebugMode);
   }
-  
-  /// Banner Ad Unit ID
-  static String get bannerAdUnitId {
-    if (AppConfig.isDevelopment) {
-      // IDs de prueba
-      return 'ca-app-pub-3940256099942544/6300978111'; // Android test
-    } else {
-      // IDs de producción - REEMPLAZAR ANTES DE PUBLICAR
-      return 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
-    }
-  }
-  
-  /// Interstitial Ad Unit ID
-  static String get interstitialAdUnitId {
-    if (AppConfig.isDevelopment) {
-      // IDs de prueba
-      return 'ca-app-pub-3940256099942544/1033173712'; // Android test
-    } else {
-      // IDs de producción - REEMPLAZAR ANTES DE PUBLICAR
-      return 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
-    }
-  }
-  
-  /// Rewarded Ad Unit ID (para futuras funciones)
-  static String get rewardedAdUnitId {
-    if (AppConfig.isDevelopment) {
-      // IDs de prueba
-      return 'ca-app-pub-3940256099942544/5224354917'; // Android test
-    } else {
-      // IDs de producción - REEMPLAZAR ANTES DE PUBLICAR
-      return 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
-    }
-  }
-}
 
-/// Configuración de In-App Purchases
-class PurchaseConfig {
-  /// Product ID para suscripción mensual
-  static String get monthlyProductId {
-    if (AppConfig.isDevelopment) {
-      return 'te_leo_premium_monthly_test';
-    } else {
-      return 'te_leo_premium_monthly';
-    }
+  /// Flag para determinar si estamos en modo producción
+  static bool get isProduction => !isDevelopment;
+
+  /// Flag para mostrar elementos de debug en la UI
+  /// Se puede sobrescribir con --dart-define=SHOW_DEBUG_ELEMENTS=false
+  static bool get showDebugElements {
+    return EnvironmentService.getBool('SHOW_DEBUG_ELEMENTS', defaultValue: isDevelopment);
   }
-  
-  /// Product ID para suscripción anual
-  static String get yearlyProductId {
-    if (AppConfig.isDevelopment) {
-      return 'te_leo_premium_yearly_test';
-    } else {
-      return 'te_leo_premium_yearly';
-    }
+
+  /// Flag para mostrar logs detallados
+  static bool get showDetailedLogs => isDevelopment;
+
+  /// Flag para mostrar información de debug en la consola
+  static bool get showDebugInfo => isDevelopment;
+
+  /// Flag para habilitar herramientas de desarrollo
+  static bool get enableDevTools => isDevelopment;
+
+  /// Flag para mostrar botones de debug en la UI
+  static bool get showDebugButtons => showDebugElements;
+
+  /// Flag para mostrar información de estado de servicios
+  static bool get showServiceStatus => showDebugElements;
+
+  /// Flag para habilitar funciones experimentales
+  static bool get enableExperimentalFeatures => isDevelopment;
+
+  /// Obtener el entorno actual
+  static String get environment {
+    return EnvironmentService.getOrDefault('ENVIRONMENT', 'development');
   }
-  
-  /// Precios (solo para mostrar, los reales vienen de las tiendas)
-  static const Map<String, double> prices = {
-    'monthly': 4.99,
-    'yearly': 24.99,
+
+  /// Información de la versión de la aplicación
+  static const String appVersion = '1.0.0';
+  static const String buildNumber = '1';
+
+  /// Obtener claves de Firebase
+  static String get firebaseProjectId => EnvironmentService.getOrDefault('FIREBASE_PROJECT_ID', '');
+  static String get firebaseApiKey => EnvironmentService.getOrDefault('FIREBASE_API_KEY', '');
+  static String get firebaseAppId => EnvironmentService.getOrDefault('FIREBASE_APP_ID', '');
+  static String get firebaseMessagingSenderId => EnvironmentService.getOrDefault('FIREBASE_MESSAGING_SENDER_ID', '');
+  static String get firebaseStorageBucket => EnvironmentService.getOrDefault('FIREBASE_STORAGE_BUCKET', '');
+
+  /// Obtener claves de Google Play Store
+  static String get playStorePackageName => EnvironmentService.getOrDefault('PLAY_STORE_PACKAGE_NAME', '');
+  static String get playStoreServiceAccountKey => EnvironmentService.getOrDefault('PLAY_STORE_SERVICE_ACCOUNT_KEY', '');
+  static String get playStoreTrack => EnvironmentService.getOrDefault('PLAY_STORE_TRACK', 'internal');
+
+  /// Obtener configuración de APIs
+  static String get apiBaseUrl => EnvironmentService.getOrDefault('API_BASE_URL', '');
+  static String get apiKey => EnvironmentService.getOrDefault('API_KEY', '');
+  static String get apiSecret => EnvironmentService.getOrDefault('API_SECRET', '');
+
+  /// Obtener configuración de Google Analytics
+  static String get googleAnalyticsId => EnvironmentService.getOrDefault('GOOGLE_ANALYTICS_ID', '');
+  static String get googleAdsAppId => EnvironmentService.getOrDefault('GOOGLE_ADS_APP_ID', '');
+  static String get googleAdsTestDeviceId => EnvironmentService.getOrDefault('GOOGLE_ADS_TEST_DEVICE_ID', '');
+
+  /// Obtener configuración específica de AdMob
+  /// Los IDs se pasan via --dart-define o se obtienen de .env
+  static String get adMobBannerAdUnitId {
+    return EnvironmentService.getOrDefault(
+      'ADMOB_BANNER_AD_UNIT_ID',
+      'ca-app-pub-3940256099942544/6300978111', // Test ID como fallback
+    );
+  }
+
+  static String get adMobInterstitialAdUnitId {
+    return EnvironmentService.getOrDefault(
+      'ADMOB_INTERSTITIAL_AD_UNIT_ID',
+      'ca-app-pub-3940256099942544/1033173712', // Test ID como fallback
+    );
+  }
+
+  static String get adMobRewardedAdUnitId {
+    return EnvironmentService.getOrDefault(
+      'ADMOB_REWARDED_AD_UNIT_ID',
+      'ca-app-pub-3940256099942544/5224354917', // Test ID como fallback
+    );
+  }
+
+  static String get adMobRewardedInterstitialAdUnitId {
+    return EnvironmentService.getOrDefault(
+      'ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID',
+      'ca-app-pub-3940256099942544/5354046379', // Test ID como fallback
+    );
+  }
+
+  static String get adMobAppOpenAdUnitId {
+    return EnvironmentService.getOrDefault(
+      'ADMOB_APP_OPEN_AD_UNIT_ID',
+      'ca-app-pub-3940256099942544/3419835294', // Test ID como fallback
+    );
+  }
+
+  static String get adMobNativeAdUnitId {
+    return EnvironmentService.getOrDefault(
+      'ADMOB_NATIVE_AD_UNIT_ID',
+      'ca-app-pub-3940256099942544/2247696110', // Test ID como fallback
+    );
+  }
+
+  static String get adMobAdaptiveBannerAdUnitId {
+    return EnvironmentService.getOrDefault(
+      'ADMOB_ADAPTIVE_BANNER_AD_UNIT_ID',
+      'ca-app-pub-3940256099942544/9214589741', // Test ID como fallback
+    );
+  }
+
+  static String get adMobMediumRectangleAdUnitId {
+    return EnvironmentService.getOrDefault(
+      'ADMOB_MEDIUM_RECTANGLE_AD_UNIT_ID',
+      'ca-app-pub-3940256099942544/6300978111', // Test ID como fallback
+    );
+  }
+
+  /// Obtener configuración de base de datos
+  static String get databaseUrl => EnvironmentService.getOrDefault('DATABASE_URL', '');
+  static String get databaseEncryptionKey => EnvironmentService.getOrDefault('DATABASE_ENCRYPTION_KEY', '');
+
+  /// Obtener configuración de notificaciones
+  static String get fcmServerKey => EnvironmentService.getOrDefault('FCM_SERVER_KEY', '');
+  static String get notificationChannelId => EnvironmentService.getOrDefault('NOTIFICATION_CHANNEL_ID', '');
+
+  /// Obtener configuración de ML Kit
+  static String get mlKitApiKey => EnvironmentService.getOrDefault('ML_KIT_API_KEY', '');
+  static String get ocrServiceUrl => EnvironmentService.getOrDefault('OCR_SERVICE_URL', '');
+
+  /// Obtener configuración de logging
+  static String get logLevel => EnvironmentService.getOrDefault('LOG_LEVEL', 'debug');
+  static bool get analyticsEnabled => EnvironmentService.getBool('ANALYTICS_ENABLED', defaultValue: true);
+  static bool get crashReportingEnabled => EnvironmentService.getBool('CRASH_REPORTING_ENABLED', defaultValue: true);
+
+  /// Información completa de la configuración
+  static Map<String, dynamic> get configInfo => {
+    'isDevelopment': isDevelopment,
+    'isProduction': isProduction,
+    'showDebugElements': showDebugElements,
+    'showDetailedLogs': showDetailedLogs,
+    'showDebugInfo': showDebugInfo,
+    'enableDevTools': enableDevTools,
+    'showDebugButtons': showDebugButtons,
+    'showServiceStatus': showServiceStatus,
+    'enableExperimentalFeatures': enableExperimentalFeatures,
+    'appVersion': appVersion,
+    'buildNumber': buildNumber,
+    'environment': environment,
+    'firebaseProjectId': firebaseProjectId.isNotEmpty ? '${firebaseProjectId.substring(0, 8)}...' : 'Not set',
+    'playStorePackageName': playStorePackageName,
+    'apiBaseUrl': apiBaseUrl,
+    'logLevel': logLevel,
+    'analyticsEnabled': analyticsEnabled,
+    'crashReportingEnabled': crashReportingEnabled,
   };
-  
-  /// Días de prueba gratuita
-  static const int freeTrialDays = 7;
-}
 
-/// Configuración de límites para usuarios gratuitos
-class LimitsConfig {
-  /// Máximo de documentos por mes para usuarios gratuitos
-  static const int maxDocumentsPerMonth = 5;
-  
-  /// Días del período de reseteo
-  static const int resetPeriodDays = 30;
-  
-  /// Frecuencia de anuncios intersticiales (cada X documentos)
-  static const int interstitialAdFrequency = 3;
-  
-  /// Tiempo mínimo entre anuncios intersticiales (segundos)
-  static const int minInterstitialInterval = 120; // 2 minutos
-}
+  /// Método para imprimir información de configuración (solo en desarrollo)
+  static void printConfigInfo() {
+    if (isDevelopment) {
+      print('=== APP CONFIG ===');
+      configInfo.forEach((key, value) {
+        print('$key: $value');
+      });
+      print('==================');
 
-/// Configuración de analytics y tracking
-class AnalyticsConfig {
-  /// Firebase Analytics habilitado
-  static bool get analyticsEnabled => AppConfig.isProduction;
-  
-  /// Crashlytics habilitado
-  static bool get crashlyticsEnabled => AppConfig.isProduction;
-  
-  /// Logging detallado (solo en desarrollo)
-  static bool get verboseLogging => AppConfig.isDevelopment;
-  
-  /// Enviar métricas de uso
-  static bool get usageMetricsEnabled => AppConfig.isProduction;
-}
-
-/// Configuración de funciones experimentales
-class FeatureFlags {
-  /// Habilitar funciones de traducción (movidas a rama separada)
-  static const bool translationEnabled = false;
-  
-  /// Habilitar navegación por voz (removida)
-  static const bool voiceNavigationEnabled = false;
-  
-  /// Habilitar vibración (removida)
-  static const bool vibrationEnabled = false;
-  
-  /// Habilitar estadísticas avanzadas (removidas)
-  static const bool advancedStatsEnabled = false;
-  
-  /// Habilitar funciones de accesibilidad extendidas
-  static const bool extendedAccessibilityEnabled = true;
-  
-  /// Habilitar modo offline avanzado
-  static const bool advancedOfflineModeEnabled = true;
-  
-  /// Habilitar sincronización en la nube (futura función)
-  static const bool cloudSyncEnabled = false;
-  
-  /// Habilitar compartir documentos (futura función)
-  static const bool documentSharingEnabled = false;
-}
-
-/// URLs importantes
-class AppUrls {
-  /// Política de privacidad
-  static const String privacyPolicy = 'https://teleo.com/privacy';
-  
-  /// Términos de servicio
-  static const String termsOfService = 'https://teleo.com/terms';
-  
-  /// Soporte técnico
-  static const String support = 'https://teleo.com/support';
-  
-  /// Sitio web principal
-  static const String website = 'https://teleo.com';
-  
-  /// Repositorio de GitHub
-  static const String githubRepo = 'https://github.com/Maxs22/-te-leo';
-  
-  /// Contacto por email
-  static const String contactEmail = 'support@teleo.com';
+      // También imprimir información del EnvironmentService
+      EnvironmentService.printConfig();
+    }
+  }
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../core/services/subscription_service.dart';
-import '../../core/services/debug_console_service.dart';
-import '../../data/models/licencia.dart';
+
 import '../../../global_widgets/global_widgets.dart';
+import '../../core/services/debug_console_service.dart';
+import '../../core/services/subscription_service.dart';
+import '../../data/models/licencia.dart';
 
 /// Controlador para la página de suscripción
 class SubscriptionController extends GetxController {
@@ -15,13 +16,23 @@ class SubscriptionController extends GetxController {
   // Getters
   bool get isLoading => _isLoading.value;
   bool get isRestoring => _subscriptionService.isRestoring;
-  List<SubscriptionProduct> get subscriptionProducts => _subscriptionService.availableProducts;
+
+  // Getter reactivo que accede directamente a la RxList
+  RxList<SubscriptionProduct> get subscriptionProducts => _subscriptionService.availableProducts;
   SubscriptionState get subscriptionState => _subscriptionService.state;
 
   @override
   void onInit() {
     super.onInit();
     DebugLog.i('SubscriptionController initialized', category: LogCategory.ui);
+    DebugLog.i('Available products: ${subscriptionProducts.length}', category: LogCategory.ui);
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    // Verificar productos después de que la vista esté lista
+    DebugLog.i('SubscriptionController ready - products: ${subscriptionProducts.length}', category: LogCategory.ui);
   }
 
   /// Suscribirse a un producto
@@ -39,7 +50,7 @@ class SubscriptionController extends GetxController {
 
       // Procesar suscripción
       final success = await _subscriptionService.subscribe(product);
-      
+
       if (success) {
         Get.snackbar(
           'Suscripción Exitosa',
@@ -49,7 +60,7 @@ class SubscriptionController extends GetxController {
           colorText: Colors.white,
           duration: const Duration(seconds: 3),
         );
-        
+
         // Volver a la pantalla anterior
         Get.back();
       } else {
@@ -61,7 +72,6 @@ class SubscriptionController extends GetxController {
           colorText: Colors.white,
         );
       }
-
     } catch (e) {
       DebugLog.e('Error in subscription process: $e', category: LogCategory.ui);
       Get.snackbar(
@@ -76,44 +86,16 @@ class SubscriptionController extends GetxController {
     }
   }
 
-  /// Activar modo demo
-  Future<void> activateDemo() async {
-    try {
-      _isLoading.value = true;
-      DebugLog.i('User activating demo mode', category: LogCategory.ui);
-
-      final success = await _subscriptionService.activateDemo();
-      
-      if (success) {
-        Get.back(); // Volver a la pantalla anterior
-      } else {
-        Get.snackbar(
-          'Error',
-          'No se pudo activar el modo demo',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-      }
-
-    } catch (e) {
-      DebugLog.e('Error activating demo: $e', category: LogCategory.ui);
-    } finally {
-      _isLoading.value = false;
-    }
-  }
-
   /// Restaurar compras
   Future<void> restorePurchases() async {
     try {
       DebugLog.i('User restoring purchases', category: LogCategory.ui);
-      
+
       final success = await _subscriptionService.restorePurchases();
-      
+
       if (success) {
         Get.back(); // Volver a la pantalla anterior
       }
-
     } catch (e) {
       DebugLog.e('Error restoring purchases: $e', category: LogCategory.ui);
       Get.snackbar(
@@ -133,8 +115,9 @@ class SubscriptionController extends GetxController {
     await Get.dialog(
       ModernDialog(
         titulo: 'Confirmar Suscripción',
-        contenido: '${product.title}\n${product.price}\n\n'
-                   'Se te cobrará ${product.price} ${product.type == TipoLicencia.premiumMensual ? 'mensualmente' : 'anualmente'} hasta que canceles.',
+        contenido:
+            '${product.title}\n${product.price}\n\n'
+            'Se te cobrará ${product.price} ${product.type == TipoLicencia.premiumMensual ? 'mensualmente' : 'anualmente'} hasta que canceles.',
         textoBotonPrimario: 'Confirmar',
         textoBotonSecundario: 'Cancelar',
         onBotonPrimario: () {
@@ -156,9 +139,10 @@ class SubscriptionController extends GetxController {
     Get.dialog(
       ModernDialog(
         titulo: 'Gestionar Suscripción',
-        contenido: 'Para gestionar tu suscripción:\n\n'
-                   'Android: Play Store > Suscripciones\n\n'
-                   'iOS: Configuración > Apple ID > Suscripciones',
+        contenido:
+            'Para gestionar tu suscripción:\n\n'
+            'Android: Play Store > Suscripciones\n\n'
+            'iOS: Configuración > Apple ID > Suscripciones',
         textoBotonPrimario: 'Entendido',
         onBotonPrimario: () => Get.back(),
       ),

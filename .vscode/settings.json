@@ -1,0 +1,33 @@
+{
+    "dart.flutterSdkPath": null,
+    "dart.debugExternalPackageLibraries": false,
+    "dart.debugSdkLibraries": false,
+    "dart.previewFlutterUiGuides": true,
+    "dart.previewFlutterUiGuidesCustomTracking": true,
+    "dart.flutterCreateAndroidLanguage": "kotlin",
+    "dart.flutterCreateIOSLanguage": "swift",
+    "dart.flutterCreatePlatforms": [
+        "android",
+        "ios"
+    ],
+    "dart.lineLength": 120,
+    "editor.rulers": [
+        120
+    ],
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
+    },
+    "files.associations": {
+        "*.dart": "dart"
+    },
+    "emmet.includeLanguages": {
+        "dart": "html"
+    },
+    "dart.warnWhenEditingFilesOutsideWorkspace": true,
+    "dart.analysisExcludedFolders": [
+        "build",
+        ".dart_tool"
+    ]
+}

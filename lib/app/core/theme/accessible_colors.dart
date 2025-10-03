@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../services/theme_service.dart';
 
 /// Paleta de colores específicamente diseñada para accesibilidad
 /// Cumple con WCAG 2.1 AA y es amigable para dislexia y baja visión
@@ -69,14 +70,25 @@ class AccessibleColors {
     }
   }
   
-  /// Obtener color de texto sobre gradiente según el tema actual
+  /// Obtener color de texto sobre gradiente según el tema actual (REACTIVO)
   static Color getTextOnGradient({bool isSecondary = false}) {
-    final isDark = Get.isDarkMode;
-    if (isDark) {
-      return isSecondary ? textOnGradientSecondary : textOnGradientLight;
-    } else {
-      // En tema claro, usar texto blanco sobre gradientes oscuros
-      return isSecondary ? textOnGradientSecondary : textOnGradientLight;
+    try {
+      final themeService = Get.find<ThemeService>();
+      final isDark = themeService.isDarkMode;
+      if (isDark) {
+        return isSecondary ? textOnGradientSecondary : textOnGradientLight;
+      } else {
+        // En tema claro, usar texto blanco sobre gradientes oscuros
+        return isSecondary ? textOnGradientSecondary : textOnGradientLight;
+      }
+    } catch (e) {
+      // Fallback si ThemeService no está disponible
+      final isDark = Get.isDarkMode;
+      if (isDark) {
+        return isSecondary ? textOnGradientSecondary : textOnGradientLight;
+      } else {
+        return isSecondary ? textOnGradientSecondary : textOnGradientLight;
+      }
     }
   }
   
@@ -116,51 +128,112 @@ class AccessibleColors {
     }
   }
 
-  /// Obtener color de texto primario con máximo contraste
+  /// Cache para colores calculados (optimización de rendimiento)
+  static final Map<String, Color> _colorCache = {};
+  
+  /// Limpiar cache cuando cambie el tema
+  static void clearCache() {
+    _colorCache.clear();
+  }
+  
+  /// Obtener color de texto primario con máximo contraste (REACTIVO y CACHEADO)
   static Color getPrimaryTextColor() {
-    return Get.isDarkMode ? textPrimaryDark : textPrimary;
-  }
-
-  /// Obtener color de texto secundario con buen contraste
-  static Color getSecondaryTextColor() {
-    return Get.isDarkMode ? textSecondaryDark : textSecondary;
-  }
-
-  /// Obtener color de superficie con contraste apropiado
-  static Color getSurfaceColor() {
-    return Get.isDarkMode ? surfaceDark : surfaceLight;
-  }
-
-  /// Obtener color de texto para botones y elementos interactivos
-  static Color getInteractiveTextColor({bool isSelected = false}) {
-    if (Get.isDarkMode) {
-      return isSelected ? primaryBlueLight : textPrimaryDark;
-    } else {
-      return isSelected ? primaryBlue : textPrimary;
+    const cacheKey = 'primary_text';
+    
+    if (_colorCache.containsKey(cacheKey)) {
+      return _colorCache[cacheKey]!;
+    }
+    
+    try {
+      final themeService = Get.find<ThemeService>();
+      final color = themeService.isDarkMode ? textPrimaryDark : textPrimary;
+      _colorCache[cacheKey] = color;
+      return color;
+    } catch (e) {
+      final color = Get.isDarkMode ? textPrimaryDark : textPrimary;
+      _colorCache[cacheKey] = color;
+      return color;
     }
   }
 
-  /// Obtener color de borde con contraste apropiado
+  /// Obtener color de texto secundario con buen contraste (REACTIVO)
+  static Color getSecondaryTextColor() {
+    try {
+      final themeService = Get.find<ThemeService>();
+      return themeService.isDarkMode ? textSecondaryDark : textSecondary;
+    } catch (e) {
+      return Get.isDarkMode ? textSecondaryDark : textSecondary;
+    }
+  }
+
+  /// Obtener color de superficie con contraste apropiado (REACTIVO)
+  static Color getSurfaceColor() {
+    try {
+      final themeService = Get.find<ThemeService>();
+      return themeService.isDarkMode ? surfaceDark : surfaceLight;
+    } catch (e) {
+      return Get.isDarkMode ? surfaceDark : surfaceLight;
+    }
+  }
+
+  /// Obtener color de texto para botones y elementos interactivos (REACTIVO)
+  static Color getInteractiveTextColor({bool isSelected = false}) {
+    try {
+      final themeService = Get.find<ThemeService>();
+      if (themeService.isDarkMode) {
+        return isSelected ? primaryBlueLight : textPrimaryDark;
+      } else {
+        return isSelected ? primaryBlue : textPrimary;
+      }
+    } catch (e) {
+      if (Get.isDarkMode) {
+        return isSelected ? primaryBlueLight : textPrimaryDark;
+      } else {
+        return isSelected ? primaryBlue : textPrimary;
+      }
+    }
+  }
+
+  /// Obtener color de borde con contraste apropiado (REACTIVO)
   static Color getBorderColor({double opacity = 0.3}) {
-    final baseColor = Get.isDarkMode ? textSecondaryDark : textSecondary;
-    return baseColor.withValues(alpha: opacity);
+    try {
+      final themeService = Get.find<ThemeService>();
+      final baseColor = themeService.isDarkMode ? textSecondaryDark : textSecondary;
+      return baseColor.withValues(alpha: opacity);
+    } catch (e) {
+      final baseColor = Get.isDarkMode ? textSecondaryDark : textSecondary;
+      return baseColor.withValues(alpha: opacity);
+    }
   }
 
-  /// Obtener color de texto que contraste con el fondo de tarjetas
+  /// Obtener color de texto que contraste con el fondo de tarjetas (REACTIVO)
   static Color getCardTextColor() {
-    // En tema oscuro: texto claro sobre fondo oscuro
-    // En tema claro: texto oscuro sobre fondo claro
-    return Get.isDarkMode ? textPrimaryDark : textPrimary;
+    try {
+      final themeService = Get.find<ThemeService>();
+      return themeService.isDarkMode ? textPrimaryDark : textPrimary;
+    } catch (e) {
+      return Get.isDarkMode ? textPrimaryDark : textPrimary;
+    }
   }
 
-  /// Obtener color de texto secundario que contraste con tarjetas
+  /// Obtener color de texto secundario que contraste con tarjetas (REACTIVO)
   static Color getCardSecondaryTextColor() {
-    return Get.isDarkMode ? textSecondaryDark : textSecondary;
+    try {
+      final themeService = Get.find<ThemeService>();
+      return themeService.isDarkMode ? textSecondaryDark : textSecondary;
+    } catch (e) {
+      return Get.isDarkMode ? textSecondaryDark : textSecondary;
+    }
   }
 
-  /// Obtener color de fondo de tarjeta con contraste apropiado
+  /// Obtener color de fondo de tarjeta con contraste apropiado (REACTIVO)
   static Color getCardBackgroundColor() {
-    return Get.isDarkMode ? surfaceDark : surfaceLight;
+    try {
+      final themeService = Get.find<ThemeService>();
+      return themeService.isDarkMode ? surfaceDark : surfaceLight;
+    } catch (e) {
+      return Get.isDarkMode ? surfaceDark : surfaceLight;
+    }
   }
 
   /// Obtener color de texto garantizando contraste mínimo con cualquier fondo

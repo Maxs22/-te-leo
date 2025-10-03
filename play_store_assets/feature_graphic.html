@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 1024px;
+            height: 500px;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 1024px;
+            height: 500px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            position: relative;
+        }
+
+        .content {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            z-index: 2;
+        }
+
+        .logo {
+            width: 200px;
+            height: 200px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .text-content {
+            color: white;
+            max-width: 600px;
+        }
+
+        h1 {
+            font-size: 64px;
+            margin: 0 0 10px 0;
+            font-weight: 700;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .tagline {
+            font-size: 32px;
+            margin: 0;
+            opacity: 0.95;
+            font-weight: 400;
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .features {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 20px;
+            opacity: 0.95;
+        }
+
+        .icon {
+            font-size: 28px;
+        }
+
+        .background-pattern {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+            z-index: 1;
+        }
+
+        .circle {
+            position: absolute;
+            border: 2px solid white;
+            border-radius: 50%;
+        }
+
+        .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            right: -100px;
+        }
+
+        .circle2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            left: 100px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="background-pattern">
+            <div class="circle circle1"></div>
+            <div class="circle circle2"></div>
+        </div>
+        <div class="content">
+            <div class="logo">
+                <img src="te-leo.png" alt="Te Leo Logo">
+            </div>
+            <div class="text-content">
+                <h1>Te Leo</h1>
+                <p class="tagline">Lectura Accesible para Todos</p>
+                <div class="features">
+                    <div class="feature">
+                        <span class="icon">📸</span>
+                        <span>OCR</span>
+                    </div>
+                    <div class="feature">
+                        <span class="icon">🔊</span>
+                        <span>Texto a Voz</span>
+                    </div>
+                    <div class="feature">
+                        <span class="icon">♿</span>
+                        <span>Accesible</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

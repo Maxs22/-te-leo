@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../data/providers/configuracion_provider.dart';
-import '../../data/models/configuracion_usuario.dart';
-import '../../core/services/tts_service.dart';
+
+import '../../../global_widgets/global_widgets.dart';
+import '../../core/models/voice_profiles.dart';
 import '../../core/services/app_update_service.dart';
 import '../../core/services/debug_console_service.dart';
 import '../../core/services/language_service.dart';
 import '../../core/services/theme_service.dart';
-import '../../../global_widgets/global_widgets.dart';
-import '../../core/models/voice_profiles.dart';
+import '../../core/services/tts_service.dart';
+import '../../data/models/configuracion_usuario.dart';
+import '../../data/providers/configuracion_provider.dart';
 
 /// Controlador para la página de configuraciones
 /// Gestiona todas las configuraciones del usuario y opciones premium
 class SettingsController extends GetxController {
   final ConfiguracionProvider _configProvider = ConfiguracionProvider();
   final TTSService _ttsService = Get.find<TTSService>();
-  
+
   // Servicios opcionales (pueden no estar disponibles)
   LanguageService? _languageService;
   ThemeService? _themeService;
@@ -45,9 +46,10 @@ class SettingsController extends GetxController {
     super.onInit();
     _inicializarControladores();
     _inicializarServicios();
-    cargarConfiguraciones();
+    // Cargar configuraciones asíncronamente
+    Future.microtask(() => cargarConfiguraciones());
   }
-  
+
   /// Inicializar servicios opcionales
   void _inicializarServicios() {
     try {
@@ -74,27 +76,46 @@ class SettingsController extends GetxController {
   /// Carga las configuraciones del usuario
   Future<void> cargarConfiguraciones() async {
     _isLoading.value = true;
-    
+
     try {
-      final config = await _configProvider.obtenerConfiguracion();
+      print('🔧 Loading settings configuration...');
+
+      final config = await _configProvider.obtenerConfiguracion().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          print('⚠️ Config provider timeout, using default');
+          return ConfiguracionUsuario.nuevoUsuario('Usuario');
+        },
+      );
       _configuracion.value = config;
-      
+      print('✅ Configuration loaded: ${config.nombreUsuario}');
+
       // Actualizar controladores de texto
       nombreController.text = config.nombreUsuario;
       emailController.text = config.email ?? '';
-      
+
       // Cargar voces disponibles
-      await _cargarVocesDisponibles();
-      
-      // Aplicar configuraciones al servicio TTS
-      await _aplicarConfiguracionTTS();
-      
-    } catch (e) {
-      await ModernDialog.mostrarError(
-        mensaje: 'Error cargando configuraciones: $e',
+      print('🔧 Loading available voices...');
+      await _cargarVocesDisponibles().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => print('⚠️ Voice loading timeout'),
       );
+      print('✅ Voices loaded');
+
+      // Aplicar configuraciones al servicio TTS
+      print('🔧 Applying TTS configuration...');
+      await _aplicarConfiguracionTTS().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => print('⚠️ TTS config timeout'),
+      );
+      print('✅ TTS configuration applied');
+    } catch (e) {
+      print('❌ Error loading settings: $e');
+      // No mostrar diálogo de error, solo loggear
+      DebugLog.e('Error loading settings: $e', category: LogCategory.app);
     } finally {
       _isLoading.value = false;
+      print('✅ Settings loading finished (isLoading = false)');
     }
   }
 
@@ -118,7 +139,7 @@ class SettingsController extends GetxController {
         volumen: _configuracion.value.volumenVoz,
         vozSeleccionada: _configuracion.value.vozSeleccionada,
       );
-      
+
       await _ttsService.actualizarConfiguracion(configTTS);
     } catch (e) {
       DebugLog.service('Error aplicando configuración TTS: $e');
@@ -130,19 +151,13 @@ class SettingsController extends GetxController {
     try {
       await _configProvider.actualizarTema(nuevoTema);
       _configuracion.value = _configuracion.value.copyWith(tema: nuevoTema);
-      
+
       // Aplicar tema inmediatamente
       _aplicarTema(nuevoTema);
-      
-      Get.snackbar(
-        'Tema actualizado',
-        'El tema se ha cambiado correctamente',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+
+      Get.snackbar('Tema actualizado', 'El tema se ha cambiado correctamente', snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      await ModernDialog.mostrarError(
-        mensaje: 'Error actualizando tema: $e',
-      );
+      await ModernDialog.mostrarError(mensaje: 'Error actualizando tema: $e');
     }
   }
 
@@ -188,9 +203,7 @@ class SettingsController extends GetxController {
 
       await _aplicarConfiguracionTTS();
     } catch (e) {
-      await ModernDialog.mostrarError(
-        mensaje: 'Error actualizando configuración de voz: $e',
-      );
+      await ModernDialog.mostrarError(mensaje: 'Error actualizando configuración de voz: $e');
     }
   }
 
@@ -198,8 +211,9 @@ class SettingsController extends GetxController {
   Future<void> mostrarInfoVoces() async {
     try {
       final vocesReales = await _ttsService.obtenerVocesReales();
-      
-      final mensaje = '''
+
+      final mensaje =
+          '''
 📱 Voces disponibles en tu dispositivo: ${vocesReales.length}
 
 ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
@@ -217,10 +231,7 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
         icono: Icons.record_voice_over,
       );
     } catch (e) {
-      await ModernDialog.mostrarError(
-        titulo: 'Error',
-        mensaje: 'No se pudo obtener información de voces: $e',
-      );
+      await ModernDialog.mostrarError(titulo: 'Error', mensaje: 'No se pudo obtener información de voces: $e');
     }
   }
 
@@ -229,10 +240,10 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
     try {
       // Detener cualquier reproducción anterior
       await _ttsService.stopAll();
-      
+
       // Obtener configuración de la voz seleccionada
       final voiceProfile = _getVoiceProfileFromId(_configuracion.value.vozSeleccionada);
-      
+
       // Configurar TTS con las configuraciones de la voz seleccionada
       final config = ConfiguracionVoz(
         velocidad: voiceProfile?.defaultSpeed ?? _configuracion.value.velocidadVoz,
@@ -242,12 +253,12 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
         vozSeleccionada: voiceProfile?.name ?? _configuracion.value.idiomaVoz,
       );
       await _ttsService.actualizarConfiguracion(config);
-      
+
       // Reproducir texto de prueba personalizado
       final nombreUsuario = _configuracion.value.nombreUsuario;
       final textoPrueba = _getPersonalizedTestMessage(nombreUsuario);
       await _ttsService.reproducir(textoPrueba);
-      
+
       // Log success using the debug system
       try {
         final debugService = Get.find<DebugConsoleService>();
@@ -272,7 +283,7 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
   /// Obtiene el perfil de voz por ID
   VoiceProfile? _getVoiceProfileFromId(String? voiceId) {
     if (voiceId == null) return null;
-    
+
     try {
       return VoiceProfileManager.getVoiceById(voiceId);
     } catch (e) {
@@ -283,7 +294,7 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
   /// Genera mensaje de prueba personalizado
   String _getPersonalizedTestMessage(String nombreUsuario) {
     final currentLanguage = Get.locale?.languageCode ?? 'es';
-    
+
     // Mensajes variados para hacer más interesante
     final mensajesEspanol = [
       '¡Hola $nombreUsuario! Esta es tu nueva voz en Te Leo.',
@@ -292,7 +303,7 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
       'Hola $nombreUsuario, esta voz te acompañará en todas tus lecturas.',
       '¡Excelente elección $nombreUsuario! Esta voz hará que leer sea más divertido.',
     ];
-    
+
     final mensajesIngles = [
       'Hello $nombreUsuario! This is your new voice in Te Leo.',
       'Hi $nombreUsuario, I like how this voice sounds, do you?',
@@ -300,10 +311,10 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
       'Hello $nombreUsuario, this voice will accompany you in all your readings.',
       'Excellent choice $nombreUsuario! This voice will make reading more fun.',
     ];
-    
+
     final mensajes = currentLanguage == 'en' ? mensajesIngles : mensajesEspanol;
     final randomIndex = DateTime.now().millisecond % mensajes.length;
-    
+
     return mensajes[randomIndex];
   }
 
@@ -313,9 +324,7 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
     final nuevoEmail = emailController.text.trim();
 
     if (nuevoNombre.isEmpty) {
-      await ModernDialog.mostrarError(
-        mensaje: 'El nombre no puede estar vacío',
-      );
+      await ModernDialog.mostrarError(mensaje: 'El nombre no puede estar vacío');
       return;
     }
 
@@ -333,7 +342,7 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
       );
 
       LoadingOverlay.ocultar();
-      
+
       Get.snackbar(
         'Información actualizada',
         'Tus datos se han guardado correctamente',
@@ -341,17 +350,12 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
       );
     } catch (e) {
       LoadingOverlay.ocultar();
-      await ModernDialog.mostrarError(
-        mensaje: 'Error actualizando información: $e',
-      );
+      await ModernDialog.mostrarError(mensaje: 'Error actualizando información: $e');
     }
   }
 
   /// Actualiza configuraciones de accesibilidad
-  Future<void> actualizarConfiguracionAccesibilidad({
-    double? tamanoFuente,
-    bool? modoAltoContraste,
-  }) async {
+  Future<void> actualizarConfiguracionAccesibilidad({double? tamanoFuente, bool? modoAltoContraste}) async {
     try {
       final nuevaConfig = _configuracion.value.copyWith(
         tamanoFuente: tamanoFuente,
@@ -367,33 +371,15 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (e) {
-      await ModernDialog.mostrarError(
-        mensaje: 'Error actualizando accesibilidad: $e',
-      );
+      await ModernDialog.mostrarError(mensaje: 'Error actualizando accesibilidad: $e');
     }
   }
 
   /// Muestra información sobre características premium
   Future<void> mostrarInfoPremium() async {
-    await ModernDialog.mostrarInformacion(
-      titulo: 'Te Leo Premium',
-      mensaje: '''
-¡Desbloquea todas las características!
-
-✨ Características Premium:
-• Sincronización en la nube
-• Respaldo automático
-• Voces premium adicionales
-• Sin límites de documentos
-• Soporte prioritario
-
-¿Te gustaría obtener Premium?
-      ''',
-      icono: Icons.star,
-      colorIcono: Colors.amber,
-    );
+    // Redirigir a la página de suscripción completa
+    Get.toNamed('/subscription');
   }
-
 
   /// Resetea todas las configuraciones
   Future<void> resetearConfiguraciones() async {
@@ -415,15 +401,11 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
       await cargarConfiguraciones();
 
       LoadingOverlay.ocultar();
-      
-      await ModernDialog.mostrarExito(
-        mensaje: 'Las configuraciones se han restaurado correctamente',
-      );
+
+      await ModernDialog.mostrarExito(mensaje: 'Las configuraciones se han restaurado correctamente');
     } catch (e) {
       LoadingOverlay.ocultar();
-      await ModernDialog.mostrarError(
-        mensaje: 'Error restaurando configuraciones: $e',
-      );
+      await ModernDialog.mostrarError(mensaje: 'Error restaurando configuraciones: $e');
     }
   }
 
@@ -433,12 +415,12 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
       LoadingOverlay.mostrar(mensaje: 'Exportando configuraciones...');
 
       await _configProvider.exportarConfiguraciones();
-      
+
       // Aquí podrías implementar la lógica para guardar en archivo o compartir
       // Por ahora solo mostramos un mensaje
-      
+
       LoadingOverlay.ocultar();
-      
+
       Get.snackbar(
         'Exportación completa',
         'Las configuraciones se han exportado correctamente',
@@ -446,21 +428,20 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
       );
     } catch (e) {
       LoadingOverlay.ocultar();
-      await ModernDialog.mostrarError(
-        mensaje: 'Error exportando configuraciones: $e',
-      );
+      await ModernDialog.mostrarError(mensaje: 'Error exportando configuraciones: $e');
     }
   }
 
   /// Verifica si una característica es premium
   bool esCaracteristicaPremium(String caracteristica) {
     const caracteristicasPremium = [
-      'sincronizacion_nube',
-      'respaldo_automatico',
-      'voces_premium',
+      'sin_anuncios',
+      'escaneos_ilimitados',
       'documentos_ilimitados',
+      'soporte_prioritario',
+      'funciones_beta',
     ];
-    
+
     return caracteristicasPremium.contains(caracteristica);
   }
 
@@ -470,13 +451,12 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
     return _configuracion.value.puedeUsarCaracteristicaPremium(caracteristica);
   }
 
-
   /// Obtiene las estadísticas de uso formateadas
   Map<String, String> get estadisticasUso {
     return {
       'Documentos escaneados': '${_configuracion.value.documentosEscaneados}',
       'Minutos escuchados': '${_configuracion.value.minutosEscuchados}',
-      'Días restantes Premium': _configuracion.value.tienePremiumActivo 
+      'Días restantes Premium': _configuracion.value.tienePremiumActivo
           ? '${_configuracion.value.diasRestantesPremium}'
           : 'No activo',
     };
@@ -486,10 +466,10 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
   Future<void> checkForUpdates() async {
     try {
       DebugLog.i('User requested manual update check', category: LogCategory.ui);
-      
+
       final updateService = Get.find<AppUpdateService>();
       final updateInfo = await updateService.checkForUpdates(showDialog: true);
-      
+
       if (updateInfo == null || !updateInfo.hasUpdate) {
         // No hay actualizaciones disponibles
         Get.dialog(
@@ -502,15 +482,15 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
         );
       }
       // Si hay actualización, el servicio ya mostrará el dialog automáticamente
-      
     } catch (e) {
       DebugLog.e('Error checking for updates: $e', category: LogCategory.ui);
-      
+
       Get.dialog(
         ModernDialog(
           titulo: 'Error',
-          contenido: 'No se pudo verificar si hay actualizaciones disponibles.\n'
-                     'Verifica tu conexión a internet e intenta nuevamente.',
+          contenido:
+              'No se pudo verificar si hay actualizaciones disponibles.\n'
+              'Verifica tu conexión a internet e intenta nuevamente.',
           textoBotonPrimario: 'Reintentar',
           textoBotonSecundario: 'Cancelar',
           onBotonPrimario: () {
@@ -522,9 +502,9 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
       );
     }
   }
-  
+
   /// Métodos para manejar idioma y tema
-  
+
   /// Obtener el nombre del idioma actual
   String get textoIdiomaActual {
     if (_languageService != null) {
@@ -532,7 +512,7 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
     }
     return 'language_spanish'.tr;
   }
-  
+
   /// Obtener el nombre del tema actual
   String get textoTemaActual {
     if (_themeService != null) {
@@ -540,54 +520,58 @@ ${vocesReales.map((v) => '• ${v['name']} (${v['locale']})').join('\n')}
     }
     return 'theme_system'.tr;
   }
-  
+
   /// Cambiar idioma
   Future<void> cambiarIdioma(String languageCode) async {
     try {
       if (_languageService != null) {
         await _languageService!.changeLanguageByString(languageCode);
-        
+
         Get.snackbar(
           'success'.tr,
-          'language'.tr + ' ' + 'success'.tr.toLowerCase(),
+          '${'language'.tr} ${'success'.tr.toLowerCase()}',
           snackPosition: SnackPosition.BOTTOM,
         );
-        
+
         // Forzar actualización de la UI
         update();
       }
     } catch (e) {
       DebugLog.e('Error changing language: $e', category: LogCategory.app);
-      Get.snackbar(
-        'error'.tr,
-        'Error cambiando idioma',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      Get.snackbar('error'.tr, 'Error cambiando idioma', snackPosition: SnackPosition.BOTTOM);
     }
   }
-  
+
   /// Cambiar tema
   Future<void> cambiarTema(ThemeMode themeMode) async {
     try {
       if (_themeService != null) {
         await _themeService!.changeTheme(themeMode);
-        
-        Get.snackbar(
-          'success'.tr,
-          'theme'.tr + ' ' + 'success'.tr.toLowerCase(),
-          snackPosition: SnackPosition.BOTTOM,
-        );
-        
+
+        // Forzar actualización completa del tema
+        await _themeService!.forceThemeUpdate();
+
+        // Forzar actualización de todos los controladores
+        try {
+          if (Get.isRegistered<dynamic>()) {
+            // HomeController
+            Get.find<dynamic>().update();
+          }
+        } catch (e) {
+          // Controlador no disponible, continuar
+        }
+
+        // Forzar reconstrucción de toda la aplicación
+        Get.forceAppUpdate();
+
+        Get.snackbar('success'.tr, '${'theme'.tr} ${'success'.tr.toLowerCase()}', snackPosition: SnackPosition.BOTTOM);
+
         // Forzar actualización de la UI
         update();
       }
     } catch (e) {
       DebugLog.e('Error changing theme: $e', category: LogCategory.app);
-      Get.snackbar(
-        'error'.tr,
-        'Error cambiando tema',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      Get.snackbar('error'.tr, 'Error cambiando tema', snackPosition: SnackPosition.BOTTOM);
     }
   }
 }

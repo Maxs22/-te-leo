@@ -2,14 +2,26 @@
     
     <!-- Permisos necesarios para Te Leo -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    
+    <!-- Permisos de almacenamiento: legacy (Android 12 y anteriores) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+    
+    <!-- Permisos de almacenamiento: Android 13+ (API 33+) - scoped storage -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    
     <uses-permission android:name="android.permission.VIBRATE" />
+    
+    <!-- Permiso para notificaciones en Android 13+ (API 33+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
     <!-- Permisos para anuncios y compras -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="com.android.vending.BILLING" />
+    
+    <!-- Permiso obligatorio para ID de publicidad en Android 13+ (API 33+) -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
     
     <!-- Features opcionales -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -18,7 +30,7 @@
     <application
         android:label="Te Leo"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -41,10 +53,10 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- AdMob Configuration -->
+        <!-- AdMob Configuration - Production -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-9060321586438242~9256703876"/>
             
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

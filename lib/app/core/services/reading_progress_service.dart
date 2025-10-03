@@ -46,15 +46,19 @@ class ReadingProgressService extends GetxService {
       final progresoExistente = await _databaseProvider.obtenerProgresoLectura(documento.id!);
       
       if (progresoExistente != null && progresoExistente.tieneProgresoSignificativo) {
-        // Preguntar al usuario si quiere continuar desde donde lo dejó
-        final shouldResume = await _showResumeDialog(documento, progresoExistente);
+        // Modal deshabilitado - ahora se maneja desde library_controller.dart con ResumeReadingDialog
+        // final shouldResume = await _showResumeDialog(documento, progresoExistente);
         
-        if (shouldResume) {
-          return; // El usuario eligió continuar, no hacer nada más
-        } else {
-          // El usuario eligió empezar desde el principio
-          await _databaseProvider.reiniciarProgresoLectura(documento.id!);
-        }
+        // if (shouldResume) {
+        //   return; // El usuario eligió continuar, no hacer nada más
+        // } else {
+        //   // El usuario eligió empezar desde el principio
+        //   await _databaseProvider.reiniciarProgresoLectura(documento.id!);
+        // }
+        
+        // Por ahora, simplemente usar el progreso existente sin mostrar modal
+        _currentProgress = progresoExistente;
+        return;
       }
       
       // Inicializar progreso nuevo
@@ -194,74 +198,6 @@ class ReadingProgressService extends GetxService {
   void _stopAutoSave() {
     _autoSaveTimer?.cancel();
     _autoSaveTimer = null;
-  }
-
-  /// Muestra diálogo para reanudar lectura
-  Future<bool> _showResumeDialog(Documento documento, ProgresoLectura progreso) async {
-    final fragmentoContexto = progreso.obtenerFragmentoContexto(documento.contenido);
-    
-    return await Get.dialog<bool>(
-      ModernDialog(
-        titulo: 'Continuar lectura',
-        contenidoWidget: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tienes progreso guardado en este documento:',
-              style: Get.theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Get.theme.colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Get.theme.colorScheme.primary.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    progreso.descripcionProgreso,
-                    style: Get.theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Get.theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '"$fragmentoContexto"',
-                    style: Get.theme.textTheme.bodySmall?.copyWith(
-                      fontStyle: FontStyle.italic,
-                      color: Get.theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            Text(
-              '¿Quieres continuar desde donde lo dejaste o empezar desde el principio?',
-              style: Get.theme.textTheme.bodyMedium,
-            ),
-          ],
-        ),
-        textoBotonPrimario: 'Continuar',
-        textoBotonSecundario: 'Desde el inicio',
-        icono: Icons.bookmark,
-        colorIcono: Get.theme.colorScheme.primary,
-        onBotonPrimario: () => Get.back(result: true),
-        onBotonSecundario: () => Get.back(result: false),
-      ),
-      barrierDismissible: false,
-    ) ?? false;
   }
 
   /// Obtiene estadísticas de progreso

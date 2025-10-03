@@ -187,17 +187,17 @@ class AccessValidationService extends GetxService {
     await Future.delayed(const Duration(milliseconds: 500)); // Simular verificación
 
     // En producción, esto consultaría un servicio remoto
-    const isMaintenanceMode = false; // Configurar según necesidad
+    // const isMaintenanceMode = false; // Configurar según necesidad
     
-    if (isMaintenanceMode) {
-      return AccessValidationResult(
-        state: AccessValidationState.denied,
-        deniedReason: AccessDeniedReason.maintenanceMode,
-        message: 'Te Leo está en mantenimiento.\nIntenta nuevamente en unos minutos.',
-        allowRetry: true,
-        retryAfter: DateTime.now().add(const Duration(minutes: 10)),
-      );
-    }
+    // if (isMaintenanceMode) {
+    //   return AccessValidationResult(
+    //     state: AccessValidationState.denied,
+    //     deniedReason: AccessDeniedReason.maintenanceMode,
+    //     message: 'Te Leo está en mantenimiento.\nIntenta nuevamente en unos minutos.',
+    //     allowRetry: true,
+    //     retryAfter: DateTime.now().add(const Duration(minutes: 10)),
+    //   );
+    // }
 
     DebugLog.d('Maintenance check passed', category: LogCategory.security);
     return const AccessValidationResult(
@@ -402,11 +402,6 @@ class AccessValidationService extends GetxService {
     return true; // Por ahora, todos los dispositivos son compatibles
   }
 
-  /// Verificar si el dispositivo está rooteado
-  Future<bool> _isDeviceRooted() async {
-    // En producción, usar plugins como flutter_jailbreak_detection
-    return false; // Por ahora, asumir que no está rooteado
-  }
 
   /// Verificar si hay debugger conectado
   bool _isDebuggerAttached() {
@@ -420,18 +415,7 @@ class AccessValidationService extends GetxService {
     return true;
   }
 
-  /// Verificar licencia local
-  Future<bool> _checkLocalLicense() async {
-    // En producción, verificar licencia almacenada localmente
-    // Por ahora, siempre retornar true para permitir acceso
-    return true;
-  }
 
-  /// Verificar si modo demo está disponible
-  Future<bool> _isDemoModeAvailable() async {
-    // Permitir modo demo por tiempo limitado
-    return true;
-  }
 
   /// Reintentar validación
   Future<AccessValidationResult> retryValidation() async {
@@ -453,10 +437,6 @@ class AccessValidationService extends GetxService {
   }
 
   /// Manejar renovación de suscripción
-  void _handleRenewSubscription() {
-    // Navegar a pantalla de suscripción
-    Get.toNamed('/subscription');
-  }
 
   /// Obtener información de estado para debugging
   Map<String, dynamic> getDebugInfo() {

@@ -1,112 +1,86 @@
-# Te Leo ProGuard Configuration
-# Optimizaciones y ofuscación para reducir el tamaño de la APK
+# ProGuard rules for Te Leo - Más permisivo para evitar problemas en release
 
-# Configuraciones básicas de Flutter
--keep class io.flutter.app.** { *; }
--keep class io.flutter.plugin.**  { *; }
--keep class io.flutter.util.**  { *; }
--keep class io.flutter.view.**  { *; }
--keep class io.flutter.**  { *; }
--keep class io.flutter.plugins.**  { *; }
+# Keep ALL Flutter plugins
+-keep class io.flutter.plugins.** { *; }
+-keep class io.flutter.plugin.** { *; }
 
-# Mantener clases de GetX
--keep class com.google.gson.** { *; }
--keep class get.** { *; }
--keepclassmembers class * extends get.GetxController {
-    <methods>;
-}
-
-# Google ML Kit Text Recognition
+# Keep Google ML Kit classes
 -keep class com.google.mlkit.** { *; }
 -keep class com.google.android.gms.** { *; }
--dontwarn com.google.mlkit.**
--dontwarn com.google.android.gms.**
 
-# Flutter TTS
--keep class com.tundralabs.fluttertts.** { *; }
--dontwarn com.tundralabs.fluttertts.**
+# Keep flutter_local_notifications classes
+-keep class com.dexterous.** { *; }
 
-# SQLite
--keep class org.sqlite.** { *; }
--keep class org.sqlite.database.** { *; }
+# Keep TTS classes
+-keep class com.tundralabs.** { *; }
 
-# Image Picker
--keep class io.flutter.plugins.imagepicker.** { *; }
-
-# Package Info Plus
--keep class io.flutter.plugins.packageinfo.** { *; }
-
-# HTTP y networking
--keep class okhttp3.** { *; }
--keep class okio.** { *; }
--dontwarn okhttp3.**
--dontwarn okio.**
-
-# In-App Update
--keep class com.google.android.play.** { *; }
--dontwarn com.google.android.play.**
-
-# URL Launcher
--keep class io.flutter.plugins.urllauncher.** { *; }
-
-# Path Provider
--keep class io.flutter.plugins.pathprovider.** { *; }
-
-# Mantener enums
--keepclassmembers enum * {
-    public static **[] values();
-    public static ** valueOf(java.lang.String);
-}
-
-# Mantener anotaciones
--keepattributes *Annotation*
--keepattributes Signature
--keepattributes InnerClasses
--keepattributes EnclosingMethod
-
-# Mantener métodos nativos
+# Keep all native methods
 -keepclasseswithmembernames class * {
     native <methods>;
 }
 
-# Mantener constructores por defecto para serialización
--keepclassmembers class * {
-    public <init>();
-}
+# Keep Flutter engine classes
+-keep class io.flutter.** { *; }
 
-# Optimizaciones específicas para Te Leo
--keep class com.teleo.te_leo.** { *; }
+# Keep GetX classes (usado para navegación y estado)
+-keep class com.example.** { *; }
 
-# Mantener clases de datos/modelos
--keep class * implements android.os.Parcelable {
-  public static final android.os.Parcelable$Creator *;
-}
+# Keep Google Mobile Ads
+-keep class com.google.android.gms.ads.** { *; }
+-keep class com.google.ads.** { *; }
 
-# Optimizaciones de R8
--allowaccessmodification
--repackageclasses ''
+# Keep In-App Purchase classes
+-keep class com.android.vending.billing.** { *; }
+-keep class com.google.android.play.** { *; }
+
+# Keep SQLite classes
+-keep class org.sqlite.** { *; }
+-keep class net.sqlcipher.** { *; }
+
+# Keep SharedPreferences classes
+-keep class android.content.SharedPreferences** { *; }
+
+# Keep Image Picker classes
+-keep class androidx.camera.** { *; }
+
+# Keep URL Launcher classes
+-keep class androidx.browser.** { *; }
+
+# Keep WebView classes
+-keep class android.webkit.** { *; }
+
+# Suppress warnings
+-dontwarn android.**
+-dontwarn com.google.**
+-dontwarn org.sqlite.**
+-dontwarn dev.fluttercommunity.plus.packageinfo.**
+-dontwarn io.flutter.plugins.sharedpreferences.**
+-ignorewarnings
+
+# Keep specific problematic classes
+-keep class dev.fluttercommunity.plus.packageinfo.** { *; }
+-keep class io.flutter.plugins.sharedpreferences.** { *; }
+
+# General Android optimizations - MENOS AGRESIVO
 -optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
+-optimizationpasses 3
+-allowaccessmodification
+-dontpreverify
 
-# Logging (remover en release)
--assumenosideeffects class android.util.Log {
-    public static boolean isLoggable(java.lang.String, int);
-    public static int v(...);
-    public static int i(...);
-    public static int w(...);
-    public static int d(...);
-    public static int e(...);
+# Keep line numbers for debugging
+-keepattributes SourceFile,LineNumberTable,*Annotation*,Signature,InnerClasses
+
+# Keep all classes that might be accessed via reflection
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
 }
 
-# Dart/Flutter específico
--keep class io.flutter.embedding.** { *; }
--keep class io.flutter.plugin.** { *; }
--keep class androidx.lifecycle.** { *; }
-
-# Mantener crashlytics si se usa en el futuro
--keepattributes SourceFile,LineNumberTable
--keep public class * extends java.lang.Exception
-
-# Configuración para reducir warnings
--dontwarn javax.annotation.**
--dontwarn kotlin.Unit
--dontwarn kotlin.jvm.internal.**
+# Keep all serializable classes
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    private static final java.io.ObjectStreamField[] serialPersistentFields;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
+}

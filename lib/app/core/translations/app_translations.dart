@@ -19,17 +19,19 @@ class AppTranslations extends Translations {
       'scan_text': 'Escanear texto',
       'my_library': 'Biblioteca',
       'scan_info': 'Toma una foto de cualquier texto y Te Leo lo leerá en voz alta',
-      
+
       // Onboarding steps
       'onboarding_step1_title': '📸 Escanea cualquier texto',
-      'onboarding_step1_description': 'Toma una foto de libros, documentos, carteles o cualquier texto que quieras escuchar',
+      'onboarding_step1_description':
+          'Toma una foto de libros, documentos, carteles o cualquier texto que quieras escuchar',
       'onboarding_step2_title': '🎧 Escucha con voz natural',
       'onboarding_step2_description': 'Te Leo convierte el texto en audio con voces naturales y configurables',
       'onboarding_step3_title': '📚 Guarda en tu biblioteca',
       'onboarding_step3_description': 'Todos tus documentos se guardan automáticamente para acceder cuando quieras',
       'onboarding_step5_title': '♿ Diseño accesible',
-      'onboarding_step5_description': 'Optimizado para personas con baja visión y dislexia con colores y tipografía especiales',
-      
+      'onboarding_step5_description':
+          'Optimizado para personas con baja visión y dislexia con colores y tipografía especiales',
+
       // Settings
       'settings_title': 'Configuraciones',
       'general': 'General',
@@ -66,7 +68,7 @@ class AppTranslations extends Translations {
       'exit': 'Salir',
       'update_available': 'Actualización disponible',
       'settings': 'Configuraciones',
-      
+
       // Navegación y botones generales
       'continue': 'Continuar',
       'cancel': 'Cancelar',
@@ -87,7 +89,7 @@ class AppTranslations extends Translations {
       'success': 'Éxito',
       'warning': 'Advertencia',
       'info': 'Información',
-      
+
       // Pantalla de bienvenida
       'good_morning': 'Buenos días',
       'good_afternoon': 'Buenas tardes',
@@ -98,11 +100,11 @@ class AppTranslations extends Translations {
       'listening_time': 'Tiempo\nEscuchado',
       'premium': 'Premium',
       'version': 'Versión',
-    
-      
+
       // Onboarding
       'onboarding_welcome_title': 'Bienvenido a Te Leo',
-      'onboarding_welcome_desc': 'Tu herramienta de lectura accesible que convierte cualquier texto en una experiencia auditiva.',
+      'onboarding_welcome_desc':
+          'Tu herramienta de lectura accesible que convierte cualquier texto en una experiencia auditiva.',
       'onboarding_scan_title': 'Escanea Cualquier Texto',
       'onboarding_scan_desc': 'Usa la cámara para capturar texto de libros, documentos o cualquier superficie.',
       'onboarding_listen_title': 'Escucha con Claridad',
@@ -111,14 +113,14 @@ class AppTranslations extends Translations {
       'onboarding_library_desc': 'Guarda y organiza todos tus documentos para acceder fácilmente cuando los necesites.',
       'onboarding_start_title': '¡Comienza a Leer!',
       'onboarding_start_desc': 'Todo está listo. Comienza tu experiencia de lectura accesible con Te Leo.',
-      
+
       // Biblioteca
       'library_title': 'Mi Biblioteca',
       'library_empty_title': 'Tu biblioteca está vacía',
       'library_empty_desc': 'Comienza escaneando tu primer documento',
       'scan_first_document': 'Escanear primer documento',
       'no_documents_found': 'No se encontraron documentos',
-      
+
       // Escaneo
       'scan_title': 'Escanear Texto',
 
@@ -126,9 +128,8 @@ class AppTranslations extends Translations {
       'text_recognized': 'Texto reconocido',
       'no_text_found': 'No se encontró texto en la imagen',
       'save_document': 'Guardar documento',
-      
-      // Configuraciones
 
+      // Configuraciones
       'user_name': 'Nombre de usuario',
       'audio': 'Audio',
       'tts_voice': 'Voz',
@@ -141,7 +142,6 @@ class AppTranslations extends Translations {
       'version_info': 'Información de versión',
       'debug': 'Debug',
       'debug_console': 'Consola de debug',
-      
 
       // TTS y reproducción
       'play': 'Reproducir',
@@ -151,14 +151,26 @@ class AppTranslations extends Translations {
       'restart': 'Reiniciar',
       'speed': 'Velocidad',
       'voice': 'Voz',
-      
+
       // Progreso de lectura
       'resume_reading': 'Reanudar lectura',
       'restart_reading': 'Reiniciar lectura',
       'reading_progress': 'Progreso de lectura',
       'resume_from_position': 'Reanudar desde donde lo dejaste',
       'start_from_beginning': 'Comenzar desde el principio',
-      
+      'continue_reading_title': 'Continuar Lectura',
+      'continue_reading_message': '¿Deseas continuar desde donde te quedaste o reiniciar?',
+      'continue_button': 'Continuar',
+      'restart_button': 'Reiniciar',
+
+      // Debug y desarrollo
+      'debug_info': 'Información de Debug',
+      'debug_buttons': 'Botones de Debug',
+      'reinitialize_services': 'Reinicializar Servicios',
+      'font_size': 'Tamaño de fuente',
+      'previous_word': 'Palabra anterior',
+      'next_word': 'Palabra siguiente',
+
       // Errores y mensajes
       'error_camera_permission': 'Se requiere permiso de cámara',
       'error_storage_permission': 'Se requiere permiso de almacenamiento',
@@ -169,21 +181,22 @@ class AppTranslations extends Translations {
       'error_tts_not_available': 'Síntesis de voz no disponible',
       'document_saved': 'Documento guardado',
       'document_deleted': 'Documento eliminado',
-      
+
       // Diálogos de confirmación
       'delete_document_title': 'Eliminar documento',
       'delete_document_message': '¿Estás seguro de que quieres eliminar este documento?',
-      
+
       // Premium y suscripciones
       'premium_title': 'Te Leo Premium',
       'premium_description': 'Desbloquea todas las funciones',
-      'premium_features_list': 'Acceso ilimitado a todas las voces\nVelocidad de reproducción avanzada\nSin límite de documentos\nSoporte prioritario',
+      'premium_features_list':
+          'Acceso ilimitado a todas las voces\nVelocidad de reproducción avanzada\nSin límite de documentos\nSoporte prioritario',
       'upgrade_to_premium': 'Actualizar a Premium',
       'demo_mode': 'Modo Demo',
       'demo_expires_in': 'El demo expira en',
       'days': 'días',
     },
-    
+
     'en_US': {
       // Application general
       'app_name': 'Te Leo',
@@ -198,7 +211,7 @@ class AppTranslations extends Translations {
       'scan_text': 'Scan Text',
       'my_library': 'Library',
       'scan_info': 'Take a photo of any text and Te Leo will read it aloud for you',
-      
+
       // Onboarding steps
       'onboarding_step1_title': '📸 Scan any text',
       'onboarding_step1_description': 'Take a photo of books, documents, signs or any text you want to hear',
@@ -207,8 +220,9 @@ class AppTranslations extends Translations {
       'onboarding_step3_title': '📚 Save to your library',
       'onboarding_step3_description': 'All your documents are automatically saved for easy access anytime',
       'onboarding_step5_title': '♿ Accessible design',
-      'onboarding_step5_description': 'Optimized for people with low vision and dyslexia with special colors and typography',
-      
+      'onboarding_step5_description':
+          'Optimized for people with low vision and dyslexia with special colors and typography',
+
       // Settings
       'settings_title': 'Settings',
       'general': 'General',
@@ -231,7 +245,7 @@ class AppTranslations extends Translations {
       'voice_speed': 'Voice Speed',
       'voice_pitch': 'Voice Pitch',
       'voice_volume': 'Voice Volume',
-      
+
       // OCR Translator
       'translator_title': '📸 Translator',
       'taking_photo': 'Taking photo...',
@@ -265,7 +279,7 @@ class AppTranslations extends Translations {
       'exit': 'Exit',
       'update_available': 'Update Available',
       'settings': 'Settings',
-      
+
       // Navigation and general buttons
       'continue': 'Continue',
       'cancel': 'Cancel',
@@ -286,7 +300,7 @@ class AppTranslations extends Translations {
       'success': 'Success',
       'warning': 'Warning',
       'info': 'Information',
-      
+
       // Library
       'library_title': 'My Library',
       'library_empty': 'Your library is empty',
@@ -302,7 +316,7 @@ class AppTranslations extends Translations {
       'edit_document': 'Edit document',
       'share_document': 'Share document',
       'delete_document': 'Delete document',
-      
+
       // Settings
       'accessibility': 'Accessibility',
       'about': 'About',
@@ -310,11 +324,9 @@ class AppTranslations extends Translations {
       'contact': 'Contact',
       'privacy': 'Privacy',
       'terms': 'Terms of Service',
-      
+
       // Voice settings
 
-      
-      
       // TTS and playback
       'play': 'Play',
       'pause': 'Pause',
@@ -323,14 +335,26 @@ class AppTranslations extends Translations {
       'restart': 'Restart',
       'speed': 'Speed',
       'voice': 'Voice',
-      
+
       // Reading progress
       'resume_reading': 'Resume reading',
       'restart_reading': 'Restart reading',
       'reading_progress': 'Reading progress',
       'resume_from_position': 'Resume from where you left off',
       'start_from_beginning': 'Start from beginning',
-      
+      'continue_reading_title': 'Continue Reading',
+      'continue_reading_message': 'Do you want to continue from where you left off or restart?',
+      'continue_button': 'Continue',
+      'restart_button': 'Restart',
+
+      // Debug and development
+      'debug_info': 'Debug Information',
+      'debug_buttons': 'Debug Buttons',
+      'reinitialize_services': 'Reinitialize Services',
+      'font_size': 'Font Size',
+      'previous_word': 'Previous word',
+      'next_word': 'Next word',
+
       // Errors and messages
       'error_camera_permission': 'Camera permission required',
       'error_storage_permission': 'Storage permission required',
@@ -341,32 +365,46 @@ class AppTranslations extends Translations {
       'error_tts_not_available': 'Text-to-speech not available',
       'document_saved': 'Document saved',
       'document_deleted': 'Document deleted',
-      
+
       // Confirmation dialogs
-  
       'delete_document_title': 'Delete document',
       'delete_document_message': 'Are you sure you want to delete this document?',
-      
+
       // Premium and subscriptions
       'premium_title': 'Te Leo Premium',
       'premium_description': 'Unlock all features',
-      'premium_features_list': 'Unlimited access to all voices\nAdvanced playback speed\nUnlimited documents\nPriority support',
+      'premium_features_list':
+          'Unlimited access to all voices\nAdvanced playback speed\nUnlimited documents\nPriority support',
       'upgrade_to_premium': 'Upgrade to Premium',
       'demo_mode': 'Demo Mode',
       'demo_expires_in': 'Demo expires in',
       'days': 'days',
-      
+
       // Reading reminders and notifications
-      'reading_reminder_single_title': '📖 Continue reading!',
-      'reading_reminder_single_body': 'You haven\'t finished reading "@document". Pick up where you left off!',
-      'reading_reminder_multiple_title': '📚 You have pending readings!',
-      'reading_reminder_multiple_body': 'You have @count unfinished documents. Continue reading!',
-      'test_notification_title': '🔔 Test notification',
-      'test_notification_body': 'Notifications are working correctly.',
-    
+      'reading_reminder_single_title': '📖 ¡Continúa leyendo!',
+      'reading_reminder_single_body': 'No has terminado de leer "@document". ¡Continúa donde lo dejaste!',
+      'reading_reminder_multiple_title': '📚 ¡Tienes lecturas pendientes!',
+      'reading_reminder_multiple_body': 'Tienes @count documentos sin terminar. ¡Continúa leyendo!',
+      'test_notification_title': '🔔 Notificación de prueba',
+      'test_notification_body': 'Las notificaciones funcionan correctamente.',
+      'daily_reminder_title': '📚 ¡Es hora de leer!',
+      'daily_reminder_body': 'Te Leo te espera. ¡Descubre nuevos textos y continúa tu aprendizaje!',
+      'document_pending_title': '📖 Documento pendiente',
+      'document_pending_body': 'Tienes un documento sin terminar: "@document". ¡Continúa leyendo!',
+
+      // Notificaciones motivacionales y premium
+      'no_scan_today_title': '📸 ¡Hoy no has escaneado!',
+      'no_scan_today_body': 'Escanea un documento nuevo y continúa aprendiendo con Te Leo',
+      'upgrade_premium_title': '⭐ ¡Hazte Premium!',
+      'upgrade_premium_body': 'Disfruta de Te Leo sin límites y con funciones exclusivas',
+      'avoid_ads_title': '🚫 Evita los anuncios',
+      'avoid_ads_body': 'Hazte Premium y disfruta de una experiencia sin interrupciones',
+      'all_done_premium_title': '🎉 ¡Todo al día!',
+      'all_done_premium_body': 'Has terminado todas tus lecturas. Hazte Premium y desbloquea más funciones',
+      'first_incomplete_title': '📖 ¡Tienes un documento pendiente!',
+      'first_incomplete_body': 'Han pasado 24 horas desde que iniciaste "@document". ¡Continúa leyendo!',
+
       'reminder_settings': 'Reminder settings',
-     
-  
     },
   };
 }

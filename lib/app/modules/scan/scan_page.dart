@@ -1,8 +1,10 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'scan_controller.dart';
+
 import '../../../global_widgets/global_widgets.dart';
+import 'scan_controller.dart';
 
 /// Página de escaneo de texto de Te Leo
 /// Interfaz completa para capturar, procesar y guardar texto desde imágenes
@@ -11,42 +13,40 @@ class ScanPage extends GetView<ScanController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Escanear Texto'),
-        centerTitle: true,
-        actions: [
-          Obx(() {
-            if (controller.estado == EstadoEscaneo.mostrandoResultado) {
-              return IconButton(
+    return Obx(() {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Escanear Texto'),
+          centerTitle: true,
+          actions: [
+            if (controller.estado == EstadoEscaneo.mostrandoResultado)
+              IconButton(
                 onPressed: controller.reiniciarEscaneo,
                 icon: const Icon(Icons.refresh),
                 tooltip: 'Escanear otra imagen',
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-        ],
-      ),
-      body: Obx(() {
-        switch (controller.estado) {
-          case EstadoEscaneo.inicial:
-            return _buildEstadoInicial();
-          case EstadoEscaneo.seleccionandoImagen:
-            return _buildCargando('Seleccionando imagen...');
-          case EstadoEscaneo.procesandoOCR:
-            return _buildCargando('Procesando imagen...');
-          case EstadoEscaneo.mostrandoResultado:
-            return _buildResultado();
-          case EstadoEscaneo.guardando:
-            return _buildCargando('Guardando documento...');
-          case EstadoEscaneo.completado:
-            return _buildCompletado();
-          case EstadoEscaneo.error:
-            return _buildError();
-        }
-      }),
-    );
+              ),
+          ],
+        ),
+        body: () {
+          switch (controller.estado) {
+            case EstadoEscaneo.inicial:
+              return _buildEstadoInicial();
+            case EstadoEscaneo.seleccionandoImagen:
+              return _buildCargando('Seleccionando imagen...');
+            case EstadoEscaneo.procesandoOCR:
+              return _buildCargando('Procesando imagen...');
+            case EstadoEscaneo.mostrandoResultado:
+              return _buildResultado();
+            case EstadoEscaneo.guardando:
+              return _buildCargando('Guardando documento...');
+            case EstadoEscaneo.completado:
+              return _buildCompletado();
+            case EstadoEscaneo.error:
+              return _buildError();
+          }
+        }(),
+      );
+    });
   }
 
   /// Construye el estado inicial con botón para iniciar escaneo
@@ -63,43 +63,25 @@ class ScanPage extends GetView<ScanController> {
         decoration: BoxDecoration(
           color: Get.theme.colorScheme.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Get.theme.colorScheme.primary.withValues(alpha: 0.2),
-          ),
+          border: Border.all(color: Get.theme.colorScheme.primary.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.camera_alt,
-                  color: Get.theme.colorScheme.primary,
-                  size: 20,
-                ),
+                Icon(Icons.camera_alt, color: Get.theme.colorScheme.primary, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    'Toma una foto del texto que quieres leer',
-                    style: Get.theme.textTheme.bodyMedium,
-                  ),
+                  child: Text('Toma una foto del texto que quieres leer', style: Get.theme.textTheme.bodyMedium),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(
-                  Icons.photo_library,
-                  color: Get.theme.colorScheme.primary,
-                  size: 20,
-                ),
+                Icon(Icons.photo_library, color: Get.theme.colorScheme.primary, size: 20),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'O selecciona una imagen de tu galería',
-                    style: Get.theme.textTheme.bodyMedium,
-                  ),
-                ),
+                Expanded(child: Text('O selecciona una imagen de tu galería', style: Get.theme.textTheme.bodyMedium)),
               ],
             ),
           ],
@@ -116,10 +98,7 @@ class ScanPage extends GetView<ScanController> {
         children: [
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
-          Text(
-            mensaje,
-            style: Get.theme.textTheme.titleMedium,
-          ),
+          Text(mensaje, style: Get.theme.textTheme.titleMedium),
           if (controller.progreso > 0) ...[
             const SizedBox(height: 16),
             SizedBox(
@@ -130,10 +109,7 @@ class ScanPage extends GetView<ScanController> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              controller.progresoTexto,
-              style: Get.theme.textTheme.bodySmall,
-            ),
+            Text(controller.progresoTexto, style: Get.theme.textTheme.bodySmall),
           ],
         ],
       ),
@@ -224,23 +200,17 @@ class ScanPage extends GetView<ScanController> {
               children: [
                 Text(
                   'Título del documento',
-                  style: Get.theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Get.theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: TextEditingController(text: controller.tituloDocumento)
-                    ..selection = TextSelection.fromPosition(
-                      TextPosition(offset: controller.tituloDocumento.length),
-                    ),
+                    ..selection = TextSelection.fromPosition(TextPosition(offset: controller.tituloDocumento.length)),
                   onChanged: (value) => controller.tituloDocumento = value,
                   decoration: InputDecoration(
                     hintText: 'Ingresa un título para el documento',
                     prefixIcon: const Icon(Icons.title),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   textCapitalization: TextCapitalization.sentences,
                 ),
@@ -260,9 +230,7 @@ class ScanPage extends GetView<ScanController> {
                     Expanded(
                       child: Text(
                         'Texto extraído',
-                        style: Get.theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Get.theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
                     // Botón de reproducir/pausar
@@ -281,21 +249,15 @@ class ScanPage extends GetView<ScanController> {
                   constraints: const BoxConstraints(minHeight: 200),
                   child: TextField(
                     controller: TextEditingController(text: controller.textoExtraido)
-                      ..selection = TextSelection.fromPosition(
-                        TextPosition(offset: controller.textoExtraido.length),
-                      ),
+                      ..selection = TextSelection.fromPosition(TextPosition(offset: controller.textoExtraido.length)),
                     onChanged: (value) => controller.textoExtraido = value,
                     maxLines: null,
                     decoration: InputDecoration(
                       hintText: 'El texto extraído aparecerá aquí...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       alignLabelWithHint: true,
                     ),
-                    style: Get.theme.textTheme.bodyLarge?.copyWith(
-                      height: 1.5,
-                    ),
+                    style: Get.theme.textTheme.bodyLarge?.copyWith(height: 1.5),
                   ),
                 ),
               ],
@@ -355,8 +317,8 @@ class ScanPage extends GetView<ScanController> {
     return EmptyState(
       icono: Icons.error_outline,
       titulo: 'Error en el procesamiento',
-      descripcion: controller.mensajeEstado.isNotEmpty 
-          ? controller.mensajeEstado 
+      descripcion: controller.mensajeEstado.isNotEmpty
+          ? controller.mensajeEstado
           : 'Ocurrió un error inesperado durante el procesamiento',
       colorIcono: Colors.red,
       textoBoton: 'Intentar de nuevo',

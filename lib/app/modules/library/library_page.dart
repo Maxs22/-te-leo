@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'library_controller.dart';
+
+import '../../../global_widgets/ads/ads_exports.dart';
 import '../../../global_widgets/global_widgets.dart';
+import 'library_controller.dart';
 
 /// Página de biblioteca de documentos de Te Leo
 /// Muestra los documentos guardados y permite gestionarlos
@@ -14,10 +16,13 @@ class LibraryPage extends GetView<LibraryController> {
       appBar: AppBar(
         title: const Text('Mi Biblioteca'),
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: controller.volverAlHome,
-        ),
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: controller.volverAlHome),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 16),
+            child: PremiumBadge(showOnlyWhenPremium: false, size: BadgeSize.small),
+          ),
+        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -37,35 +42,39 @@ class LibraryPage extends GetView<LibraryController> {
     );
   }
 
-
   /// Construye la lista de documentos
   Widget _buildDocumentList(BuildContext context) {
     return ListView.builder(
       padding: const EdgeInsets.all(16.0),
-      itemCount: controller.documentos.length,
+      itemCount: controller.documentos.length + 3, // +3 para anuncios
       itemBuilder: (context, index) {
-        return Obx(() {
-          final documento = controller.documentos[index];
-          return DocumentCard(
-            titulo: documento.titulo,
-            resumen: documento.resumen,
-            fechaModificacion: documento.fechaModificacion,
-            esFavorito: documento.esFavorito,
-            onTap: () => controller.abrirDocumento(documento), // Usar lector avanzado
-            onFavoriteToggle: () => controller.alternarFavorito(documento),
-            onDelete: () => controller.eliminarDocumento(documento),
-            onShare: () {
-              // TODO: Implementar compartir
-              Get.snackbar(
-                'Compartir',
-                'Función en desarrollo',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
-          );
-        });
+        // Banner en la parte superior
+        if (index == 0) {
+          return const Column(children: [BannerAdWidget(margin: EdgeInsets.only(bottom: 16))]);
+        }
+
+        // Native ad cada 5 documentos
+        if ((index - 1) % 6 == 5 && index < controller.documentos.length + 1) {
+          return const Column(children: [NativeAdWidget(margin: EdgeInsets.symmetric(vertical: 8))]);
+        }
+
+        // Ajustar índice para anuncios insertados
+        int docIndex = index - 1 - ((index - 1) ~/ 6);
+        if (docIndex >= controller.documentos.length) {
+          return const SizedBox.shrink();
+        }
+
+        final documento = controller.documentos[docIndex];
+        return DocumentCard(
+          titulo: documento.titulo,
+          resumen: documento.resumen,
+          fechaModificacion: documento.fechaModificacion,
+          esFavorito: documento.esFavorito,
+          onTap: () => controller.abrirDocumento(documento),
+          onFavoriteToggle: () => controller.alternarFavorito(documento),
+          onDelete: () => controller.eliminarDocumento(documento),
+        );
       },
     );
   }
-
 }

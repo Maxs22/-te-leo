@@ -19,9 +19,14 @@ export 'modern_card.dart';
 // Estados vacíos
 export 'empty_state.dart';
 
+// Logo de la aplicación
+export 'app_logo.dart';
+
+// Animaciones de carga
+export 'loading_dots.dart';
+
 // Texto interactivo y lectura avanzada
 export 'interactive_text.dart';
-export 'document_reader.dart';
 export 'simple_document_reader.dart';
 
 // Páginas especiales y debugging

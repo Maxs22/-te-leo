@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:te_leo/app/core/services/debug_console_service.dart';
 import 'tts_service.dart';
@@ -46,14 +47,14 @@ class EnhancedTTSService extends GetxService {
   List<String> _words = [];
   List<String> get words => _words;
 
+  /// Estado del TTS (delega al servicio base)
+  EstadoTTS get estado => _baseTTSService.estado;
+
   /// Tiempo de inicio de la reproducción
   DateTime? _startTime;
 
   /// Timer para simular progreso
   Timer? _progressTimer;
-
-  /// Estado actual del TTS
-  EstadoTTS get estado => _baseTTSService.estado;
   
   /// Progreso actual
   double get progreso => _baseTTSService.progreso;
@@ -78,9 +79,7 @@ class EnhancedTTSService extends GetxService {
       switch (nuevoEstado) {
         case EstadoTTS.reproduciendo:
           DebugLog.d('TTS started/resumed, beginning word tracking simulation', category: LogCategory.tts);
-          if (_startTime == null) {
-            _startTime = DateTime.now();
-          }
+          _startTime ??= DateTime.now();
           _startProgressSimulation();
           break;
         case EstadoTTS.detenido:
@@ -88,6 +87,15 @@ class EnhancedTTSService extends GetxService {
           DebugLog.d('TTS stopped/completed, stopping word tracking', category: LogCategory.tts);
           _stopProgressSimulation();
           _currentWordIndex.value = -1;
+          // Asegurar que el progreso llegue al 100% cuando se completa
+          if (nuevoEstado == EstadoTTS.completado) {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              // Forzar progreso al 100% si no está ya
+              if (_baseTTSService.progreso < 1.0) {
+                DebugLog.d('Forcing progress to 100% on completion', category: LogCategory.tts);
+              }
+            });
+          }
           break;
         case EstadoTTS.pausado:
           DebugLog.d('TTS paused, pausing word tracking (maintaining position)', category: LogCategory.tts);
@@ -102,11 +110,14 @@ class EnhancedTTSService extends GetxService {
   Future<void> reproducir(String texto) async {
     _prepareTextForTracking(texto);
     _startTime = DateTime.now();
+    
+    // Iniciar seguimiento de progreso INMEDIATAMENTE
+    _startProgressSimulation();
+    
     await _baseTTSService.reproducir(texto);
     
-    // Iniciar seguimiento de progreso manualmente como respaldo
-    // En caso de que el callback automático no funcione
-    Future.delayed(const Duration(milliseconds: 500), () {
+    // Respaldo adicional por si acaso
+    Future.delayed(const Duration(milliseconds: 200), () {
       if (estado == EstadoTTS.reproduciendo && _progressTimer == null) {
         DebugLog.w('Auto-starting word tracking as backup', category: LogCategory.tts);
         _startProgressSimulation();
@@ -240,9 +251,10 @@ class EnhancedTTSService extends GetxService {
     
     // Usar timer frecuente para sincronizar con progreso real del TTS
     _progressTimer = Timer.periodic(
-      const Duration(milliseconds: 150), // Actualizar cada 150ms para mejor rendimiento
+      const Duration(milliseconds: 100), // Actualizar cada 100ms para mejor responsividad
       (timer) {
-        if (estado != EstadoTTS.reproduciendo) {
+        // Continuar hasta que se detenga explícitamente o termine
+        if (estado == EstadoTTS.detenido || estado == EstadoTTS.completado) {
           DebugLog.d('Stopping word tracking - TTS state: $estado', category: LogCategory.tts);
           timer.cancel();
           _progressTimer = null;
@@ -260,11 +272,15 @@ class EnhancedTTSService extends GetxService {
         // Solo actualizar si cambió el índice de palabra
         if (clampedWordIndex != _currentWordIndex.value && clampedWordIndex >= startWordIndex) {
           final oldIndex = _currentWordIndex.value;
-          _currentWordIndex.value = clampedWordIndex;
-          _notifyWordProgress(clampedWordIndex);
           
-          DebugLog.d('Word highlight: $oldIndex → $clampedWordIndex (${(ttsProgress * 100).toStringAsFixed(1)}%)', 
-                    category: LogCategory.tts);
+          // Usar post frame callback para evitar setState durante build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _currentWordIndex.value = clampedWordIndex;
+            _notifyWordProgress(clampedWordIndex);
+            
+            DebugLog.d('Word highlight: $oldIndex → $clampedWordIndex (${(ttsProgress * 100).toStringAsFixed(1)}%)', 
+                      category: LogCategory.tts);
+          });
         }
       },
     );
@@ -297,13 +313,6 @@ class EnhancedTTSService extends GetxService {
     _progressTimer = null;
   }
 
-  /// Estima la duración de lectura
-  int _estimateReadingDuration(String text) {
-    final wordsPerMinute = 150 * _baseTTSService.configuracion.velocidad;
-    final wordCount = text.split(RegExp(r'\s+')).length;
-    final minutes = wordCount / wordsPerMinute;
-    return (minutes * 60 * 1000).round();
-  }
 
   /// Obtiene el offset de caracteres basado en el índice de palabra
   int _getCharacterOffsetFromWordIndex(int wordIndex) {

@@ -189,6 +189,7 @@ Esta es una configuración única que toma 2-3 minutos.''';
       titulo: title,
       mensaje: instructions,
       icono: Icons.help_outline,
+      padding: const EdgeInsets.all(16), // Menos padding para que los textos se extiendan más
     );
   }
   

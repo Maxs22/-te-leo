@@ -437,10 +437,6 @@ class AppUpdateService extends GetxService {
     );
   }
 
-  /// Formatear fecha
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
 
   /// Programar verificación periódica
   void _schedulePeriodicCheck() {

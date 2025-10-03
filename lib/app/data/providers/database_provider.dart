@@ -1,6 +1,7 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart';
+
 import '../models/documento.dart';
 import '../models/progreso_lectura.dart';
 
@@ -9,15 +10,15 @@ import '../models/progreso_lectura.dart';
 class DatabaseProvider {
   static const String _databaseName = 'te_leo.db';
   static const int _databaseVersion = 2;
-  
+
   static const String _tableName = 'documentos';
   static const String _progressTableName = 'progreso_lectura';
-  
+
   // Singleton pattern
   static final DatabaseProvider _instance = DatabaseProvider._internal();
   factory DatabaseProvider() => _instance;
   DatabaseProvider._internal();
-  
+
   Database? _database;
 
   /// Obtiene la instancia de la base de datos
@@ -30,13 +31,8 @@ class DatabaseProvider {
   Future<Database> _initDatabase() async {
     final documentsDirectory = await getApplicationDocumentsDirectory();
     final path = join(documentsDirectory.path, _databaseName);
-    
-    return await openDatabase(
-      path,
-      version: _databaseVersion,
-      onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
-    );
+
+    return await openDatabase(path, version: _databaseVersion, onCreate: _onCreate, onUpgrade: _onUpgrade);
   }
 
   /// Crea las tablas de la base de datos
@@ -99,7 +95,7 @@ class DatabaseProvider {
           UNIQUE(documento_id)
         )
       ''');
-      
+
       // Crear índices para la nueva tabla
       await db.execute('CREATE INDEX idx_progreso_documento ON $_progressTableName(documento_id)');
       await db.execute('CREATE INDEX idx_progreso_actualizacion ON $_progressTableName(ultima_actualizacion)');
@@ -111,21 +107,14 @@ class DatabaseProvider {
     final db = await database;
     final map = documento.toMap();
     map.remove('id'); // Remover ID para auto-incremento
-    
-    return await db.insert(
-      _tableName,
-      map,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+
+    return await db.insert(_tableName, map, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// Obtiene todos los documentos
   Future<List<Documento>> obtenerTodosLosDocumentos() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      _tableName,
-      orderBy: 'fecha_modificacion DESC',
-    );
+    final List<Map<String, dynamic>> maps = await db.query(_tableName, orderBy: 'fecha_modificacion DESC');
 
     return List.generate(maps.length, (i) => Documento.fromMap(maps[i]));
   }
@@ -133,11 +122,7 @@ class DatabaseProvider {
   /// Obtiene un documento por ID
   Future<Documento?> obtenerDocumentoPorId(int id) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      _tableName,
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    final List<Map<String, dynamic>> maps = await db.query(_tableName, where: 'id = ?', whereArgs: [id]);
 
     if (maps.isNotEmpty) {
       return Documento.fromMap(maps.first);
@@ -149,30 +134,21 @@ class DatabaseProvider {
   Future<int> actualizarDocumento(Documento documento) async {
     final db = await database;
     final map = documento.copyWith(fechaModificacion: DateTime.now()).toMap();
-    
-    return await db.update(
-      _tableName,
-      map,
-      where: 'id = ?',
-      whereArgs: [documento.id],
-    );
+
+    return await db.update(_tableName, map, where: 'id = ?', whereArgs: [documento.id]);
   }
 
   /// Elimina un documento
   Future<int> eliminarDocumento(int id) async {
     final db = await database;
-    return await db.delete(
-      _tableName,
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete(_tableName, where: 'id = ?', whereArgs: [id]);
   }
 
   /// Busca documentos por palabra clave
   Future<List<Documento>> buscarDocumentos(String palabraClave) async {
     final db = await database;
     final palabraBusqueda = '%${palabraClave.toLowerCase()}%';
-    
+
     final List<Map<String, dynamic>> maps = await db.query(
       _tableName,
       where: 'LOWER(titulo) LIKE ? OR LOWER(contenido) LIKE ? OR LOWER(etiquetas) LIKE ?',
@@ -203,11 +179,38 @@ class DatabaseProvider {
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
+  /// Limpia documentos duplicados (mismo título y contenido)
+  Future<int> limpiarDocumentosDuplicados() async {
+    final db = await database;
+
+    // Buscar documentos duplicados
+    final duplicates = await db.rawQuery('''
+      SELECT titulo, contenido, COUNT(*) as count, GROUP_CONCAT(id) as ids
+      FROM $_tableName 
+      GROUP BY titulo, contenido 
+      HAVING COUNT(*) > 1
+    ''');
+
+    int deletedCount = 0;
+
+    for (final duplicate in duplicates) {
+      final idsString = duplicate['ids'] as String;
+      final ids = idsString.split(',').map(int.parse).toList();
+
+      // Mantener solo el primer documento (más antiguo), eliminar los demás
+      final idsToDelete = ids.skip(1).toList();
+
+      for (final id in idsToDelete) {
+        await db.delete(_tableName, where: 'id = ?', whereArgs: [id]);
+        deletedCount++;
+      }
+    }
+
+    return deletedCount;
+  }
+
   /// Obtiene documentos por rango de fechas
-  Future<List<Documento>> obtenerDocumentosPorFecha({
-    DateTime? fechaInicio,
-    DateTime? fechaFin,
-  }) async {
+  Future<List<Documento>> obtenerDocumentosPorFecha({DateTime? fechaInicio, DateTime? fechaFin}) async {
     final db = await database;
     String where = '';
     List<dynamic> whereArgs = [];
@@ -240,12 +243,8 @@ class DatabaseProvider {
     final db = await database;
     final map = progreso.toMap();
     map.remove('id'); // Remover ID para manejo automático
-    
-    await db.insert(
-      _progressTableName,
-      map,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+
+    await db.insert(_progressTableName, map, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// Obtiene el progreso de lectura de un documento
@@ -274,14 +273,12 @@ class DatabaseProvider {
     bool? estaCompleto,
   }) async {
     final db = await database;
-    
+
     // Obtener progreso existente o crear uno nuevo
     final progresoExistente = await obtenerProgresoLectura(documentoId);
-    
-    final Map<String, dynamic> updates = {
-      'ultima_actualizacion': DateTime.now().millisecondsSinceEpoch,
-    };
-    
+
+    final Map<String, dynamic> updates = {'ultima_actualizacion': DateTime.now().millisecondsSinceEpoch};
+
     if (porcentajeProgreso != null) updates['porcentaje_progreso'] = porcentajeProgreso;
     if (posicionCaracter != null) updates['posicion_caracter'] = posicionCaracter;
     if (posicionPalabra != null) updates['posicion_palabra'] = posicionPalabra;
@@ -291,12 +288,7 @@ class DatabaseProvider {
 
     if (progresoExistente != null) {
       // Actualizar progreso existente
-      await db.update(
-        _progressTableName,
-        updates,
-        where: 'documento_id = ?',
-        whereArgs: [documentoId],
-      );
+      await db.update(_progressTableName, updates, where: 'documento_id = ?', whereArgs: [documentoId]);
     } else {
       // Crear nuevo progreso
       updates['documento_id'] = documentoId;
@@ -305,7 +297,7 @@ class DatabaseProvider {
       updates['posicion_palabra'] = posicionPalabra ?? 0;
       updates['tiempo_reproducido_ms'] = tiempoReproducido?.inMilliseconds ?? 0;
       updates['esta_completo'] = estaCompleto == true ? 1 : 0;
-      
+
       await db.insert(_progressTableName, updates);
     }
   }
@@ -313,11 +305,7 @@ class DatabaseProvider {
   /// Elimina el progreso de lectura de un documento
   Future<void> eliminarProgresoLectura(int documentoId) async {
     final db = await database;
-    await db.delete(
-      _progressTableName,
-      where: 'documento_id = ?',
-      whereArgs: [documentoId],
-    );
+    await db.delete(_progressTableName, where: 'documento_id = ?', whereArgs: [documentoId]);
   }
 
   /// Obtiene todos los documentos con su progreso de lectura
@@ -337,7 +325,7 @@ class DatabaseProvider {
       LEFT JOIN $_progressTableName p ON d.id = p.documento_id
       ORDER BY d.fecha_modificacion DESC
     ''');
-    
+
     return resultado;
   }
 
@@ -358,17 +346,13 @@ class DatabaseProvider {
       WHERE p.porcentaje_progreso > 0.05 AND p.esta_completo = 0
       ORDER BY p.ultima_actualizacion DESC
     ''');
-    
+
     return resultado;
   }
 
   /// Marca un documento como completamente leído
   Future<void> marcarDocumentoComoCompleto(int documentoId) async {
-    await actualizarProgresoLectura(
-      documentoId: documentoId,
-      porcentajeProgreso: 1.0,
-      estaCompleto: true,
-    );
+    await actualizarProgresoLectura(documentoId: documentoId, porcentajeProgreso: 1.0, estaCompleto: true);
   }
 
   /// Reinicia el progreso de un documento
@@ -387,11 +371,13 @@ class DatabaseProvider {
   /// Obtiene estadísticas de progreso de lectura
   Future<Map<String, int>> obtenerEstadisticasProgreso() async {
     final db = await database;
-    
+
     final totalResult = await db.rawQuery('SELECT COUNT(*) FROM $_progressTableName');
     final completosResult = await db.rawQuery('SELECT COUNT(*) FROM $_progressTableName WHERE esta_completo = 1');
-    final enProgresoResult = await db.rawQuery('SELECT COUNT(*) FROM $_progressTableName WHERE porcentaje_progreso > 0.05 AND esta_completo = 0');
-    
+    final enProgresoResult = await db.rawQuery(
+      'SELECT COUNT(*) FROM $_progressTableName WHERE porcentaje_progreso > 0.05 AND esta_completo = 0',
+    );
+
     return {
       'total_con_progreso': Sqflite.firstIntValue(totalResult) ?? 0,
       'documentos_completos': Sqflite.firstIntValue(completosResult) ?? 0,
@@ -406,6 +392,26 @@ class DatabaseProvider {
     await db.delete(_progressTableName);
   }
 
+  /// Resetea la base de datos para una nueva instalación
+  Future<void> resetearParaNuevaInstalacion() async {
+    try {
+      final db = await database;
+
+      // Eliminar todos los documentos y progreso
+      await db.delete(_tableName);
+      await db.delete(_progressTableName);
+
+      // Opcional: Resetear el contador de IDs si es necesario
+      await db.execute('DELETE FROM sqlite_sequence WHERE name = ?', [_tableName]);
+      await db.execute('DELETE FROM sqlite_sequence WHERE name = ?', [_progressTableName]);
+
+      print('Base de datos resetada para nueva instalación');
+    } catch (e) {
+      print('Error resetando base de datos para nueva instalación: $e');
+      rethrow;
+    }
+  }
+
   /// Cierra la base de datos
   Future<void> cerrarBaseDatos() async {
     final db = _database;
@@ -418,13 +424,12 @@ class DatabaseProvider {
   /// Obtiene estadísticas de la base de datos
   Future<Map<String, int>> obtenerEstadisticas() async {
     final db = await database;
-    
+
     final totalResult = await db.rawQuery('SELECT COUNT(*) FROM $_tableName');
     final favoritosResult = await db.rawQuery('SELECT COUNT(*) FROM $_tableName WHERE es_favorito = 1');
-    final hoyResult = await db.rawQuery(
-      'SELECT COUNT(*) FROM $_tableName WHERE fecha_creacion >= ?',
-      [DateTime.now().subtract(const Duration(days: 1)).millisecondsSinceEpoch],
-    );
+    final hoyResult = await db.rawQuery('SELECT COUNT(*) FROM $_tableName WHERE fecha_creacion >= ?', [
+      DateTime.now().subtract(const Duration(days: 1)).millisecondsSinceEpoch,
+    ]);
 
     return {
       'total': Sqflite.firstIntValue(totalResult) ?? 0,
